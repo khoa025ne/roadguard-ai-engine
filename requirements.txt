@@ -1,0 +1,24 @@
+# CrackScan VN — Dependencies
+# Install: pip install -r requirements.txt
+
+# ─── Core AI ──────────────────────────────────────────────────────────────────
+ultralytics>=8.3.0          # YOLOv11 framework (tích hợp PyTorch)
+torch>=2.0.0                # PyTorch (tự động install với ultralytics)
+torchvision>=0.15.0
+
+# ─── Computer Vision ─────────────────────────────────────────────────────────
+opencv-python>=4.8.0        # Đọc/ghi/xử lý ảnh & video
+numpy>=1.24.0               # Array operations
+
+# ─── Utilities ────────────────────────────────────────────────────────────────
+tqdm>=4.65.0                # Progress bars
+Pillow>=9.0.0               # Image I/O (dùng bởi ultralytics)
+
+# ─── Data & Output ────────────────────────────────────────────────────────────
+# pandas>=2.0.0             # (optional) Nếu cần export CSV
+# shapely>=2.0.0            # (optional) Geometric calculations cho GeoJSON
+# weasyprint>=60.0          # (optional) PDF report generation
+
+# ─── Web API (optional) ──────────────────────────────────────────────────────
+# fastapi>=0.100.0          # REST API backend
+# uvicorn>=0.22.0           # ASGI server

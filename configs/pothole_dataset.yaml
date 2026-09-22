@@ -1,0 +1,9 @@
+# Cấu hình dataset Pothole (Roboflow - 3,940 ảnh)
+path: f:/train AI đồ án/data/pothole
+train: train/images
+val: valid/images
+test: test/images
+
+# Lớp đối tượng
+nc: 1
+names: ['pothole']

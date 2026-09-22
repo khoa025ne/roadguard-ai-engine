@@ -1,0 +1,18 @@
+# Cấu hình dataset 8 classes hư hỏng mặt đường (RoadGuard standard)
+path: f:/train AI đồ án/data/crack_dataset
+train: images/train
+val: images/val
+test: images/test
+
+# 8 Classes chuẩn hóa theo Data Dictionary của RoadGuard
+nc: 8
+names: [
+  'pothole',             # 0: Ổ gà, sụt lún
+  'longitudinal_crack',  # 1: Nứt dọc
+  'transverse_crack',    # 2: Nứt ngang
+  'alligator_crack',     # 3: Nứt chân chim
+  'edge_crack',          # 4: Nứt mép đường
+  'block_crack',         # 5: Nứt ô bàn cờ
+  'spalling',            # 6: Bong tróc bê-tông
+  'raveling'             # 7: Tróc rỗ đá dăm
+]
