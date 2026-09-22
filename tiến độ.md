@@ -27,6 +27,9 @@
 >    - CẬP NHẬT NGAY trạng thái checklist trong file `tiến độ.md` này (`[ ]` $\rightarrow$ `[x]`).
 >    - Ghi nhận chi tiết vào phần **Nhật ký thay đổi (Changelog)** ở cuối file.
 >    - Kiểm tra tính nguyên vẹn của toàn bộ pipeline trước khi kết thúc phiên.
+> 4. **QUY TẮC NHÁNH & COMMIT GIT (Branching & Commits):**
+>    - **Nhánh:** `main` (BẤT KHẢ XÂM PHẠM - cấm code trực tiếp); `dev` (Nhánh gốc phát triển); `feature/<ten-tinh-nang>` hoặc `fix/<ten-loi>` (Nhánh làm việc).
+>    - **Commit:** Bắt buộc định dạng `<type>: <Mô tả bằng tiếng Việt>` (VD: `feat: tích hợp OpenCV cắt frame video`, `fix: sửa lỗi crash khi video không có frame`). Chi tiết xem [.agents/rules/git_workflow.md](file:///f:/train%20AI%20đồ%20án/.agents/rules/git_workflow.md).
 
 ---
 
@@ -96,3 +99,4 @@
 | **2026-09-22 17:32** | AI Pair Programmer | **TEST THỰC TẾ VIDEO FLYCAM (DJI_0057.MP4):** Chạy kiểm thử thành công trên video thực tế `F:\Fake_admin\Downloads\đồ án test vid\DJI_0057.MP4`. Quality Gate đạt PASSED (độ nét 968.86 > 100). Trích xuất 25 frame, chạy inference 640x640 tiling, phát hiện 185 đối tượng/khuyết tật, xuất đầy đủ `inspection_report.json`, `inspection_layer.geojson`, `quality_report.json`, 25 ảnh visualization và 185 ảnh crop bằng chứng. | `process_raw_video.py`, `src/ingestion/raw_video_analyzer.py`, `src/ingestion/video_extractor.py` | Test thực tế thành công 100% |
 | **2026-09-23 00:16** | AI Pair Programmer | **XUẤT BẢN MASTER README.MD & ASSETS DEMO:** Tạo file `README.md` đỉnh cao với sơ đồ Mermaid, demo ảnh nhận diện, cấu trúc thư mục 5 tầng, quickstart và bộ quy tắc vận hành cho AI Agent & Dev team. Chuẩn bị sẵn Description & Topics cho GitHub repository. | `README.md`, `assets/detection_demo.jpg`, `assets/crop_demo.jpg` | Hoàn thành bộ mặt Repo |
 | **2026-09-23 00:19** | AI Pair Programmer | **KẾT NỐI & PUSH GITHUB REPOSITORY THÀNH CÔNG:** Thiết lập `.gitignore` chuẩn, cấu hình remote `https://github.com/khoa025ne/roadguard-ai-engine.git`, commit 40 files sạch sẽ và push thành công nhánh `main` lên GitHub. | Git Remote, `.gitignore`, `main` branch | Repo trực tuyến 100% |
+| **2026-09-23 00:27** | AI Pair Programmer | **THIẾT LẬP NHÁNH DEV & QUY CHUẨN GIT MỚI:** Tạo nhánh `dev` từ `main`, push lên `origin/dev`, tích hợp bộ quy tắc Branching 3 cấp độ và Conventional Commits tiếng Việt vào `.agents/rules/git_workflow.md` và `tiến độ.md`. | `.agents/rules/git_workflow.md`, `tiến độ.md`, branch `dev` | Sẵn sàng code trên dev |
