@@ -27,17 +27,25 @@ class MockAIAdapter:
         start_time = time.time()
         detections = []
 
-        mock_types = ["pothole", "longitudinal_crack", "alligator_crack"]
+        mock_types = ["pothole", "longitudinal_crack", "edge_crack", "alligator_crack"]
+        mock_bands = ["SURFACE", "SURFACE", "LEFT_EDGE", "RIGHT_EDGE"]
 
         for i in range(num_mock_defects):
             d_lat = start_lat + (i * 0.00015)
             d_lon = start_lon + (i * 0.00010)
             det_type = mock_types[i % len(mock_types)]
+            det_band = mock_bands[i % len(mock_bands)]
+            station_m = 120.0 + (i * 140.0)  # VD: 120m, 260m, 400m, 540m
+            # Giả định segment [0m - 500m], nếu station > 500m là context overlap
+            is_overlap = station_m > 500.0 or station_m < 0.0
 
             rec = AIDetectionPayloadFormatter.create_detection_record(
                 processing_job_id=processing_job_id,
                 model_version_id=self.model_version_id,
                 defect_type_code=det_type,
+                target_band=det_band,
+                is_context_overlap=is_overlap,
+                projected_station_m=station_m,
                 confidence=0.88 - (i * 0.05),
                 estimated_width_mm=320.0 + (i * 40.0),
                 estimated_length_m=0.45 + (i * 0.20),
@@ -48,10 +56,12 @@ class MockAIAdapter:
                 location_method="OBSERVED_FOOTPRINT",
                 camera_pose={
                     "altitude_m": 8.5,
-                    "gimbal_pitch": -90.0,
-                    "gsd_mm_per_px": 1.21,
+                    "gimbal_pitch_deg": -89.8,
+                    "gsd_mm_per_px": 1.07,
                     "frame_index": 15 * (i + 1),
-                    "timestamp_ms": 500 * (i + 1)
+                    "timestamp_ms": 500 * (i + 1),
+                    "flight_heading_deg": 45.0,
+                    "is_forward_flight": True
                 },
                 raw_box=[200 + i * 50, 300 + i * 50, 280 + i * 50, 390 + i * 50],
                 crop_uri=f"mock://crops/mock_{i}.jpg"

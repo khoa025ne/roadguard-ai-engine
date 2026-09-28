@@ -19,6 +19,9 @@ class AIDetectionPayloadFormatter:
         confidence: float,
         estimated_width_mm: float,
         estimated_length_m: float,
+        target_band: str = "SURFACE",
+        is_context_overlap: bool = False,
+        projected_station_m: Optional[float] = None,
         aircraft_lat: Optional[float] = None,
         aircraft_lon: Optional[float] = None,
         defect_lat: Optional[float] = None,
@@ -28,7 +31,7 @@ class AIDetectionPayloadFormatter:
         raw_box: Optional[List[int]] = None,
         crop_uri: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Tạo 1 bản ghi AIDetection chuẩn hóa."""
+        """Tạo 1 bản ghi AIDetection chuẩn hóa theo Data Dictionary v1."""
         det_id = str(uuid.uuid4())
 
         aircraft_geom = f"POINT({aircraft_lon} {aircraft_lat})" if aircraft_lat and aircraft_lon else None
@@ -39,10 +42,13 @@ class AIDetectionPayloadFormatter:
             "processing_job_id": processing_job_id,
             "model_version_id": model_version_id,
             "defect_type_code": defect_type_code,
+            "target_band": target_band,
+            "is_context_overlap": is_context_overlap,
             "confidence": round(float(confidence), 4),
             "is_2d_estimate": True,
             "estimated_width": estimated_width_mm,
             "estimated_length": estimated_length_m,
+            "projected_station_m": round(float(projected_station_m), 2) if projected_station_m is not None else None,
             "defect_location_method": location_method,
             "geometry": defect_geom,
             "aircraft_location": aircraft_geom,
@@ -99,6 +105,9 @@ class AIDetectionPayloadFormatter:
                 "properties": {
                     "detection_id": det.get("id"),
                     "defect_type_code": det.get("defect_type_code"),
+                    "target_band": det.get("target_band", "SURFACE"),
+                    "is_context_overlap": det.get("is_context_overlap", False),
+                    "projected_station_m": det.get("projected_station_m"),
                     "confidence": det.get("confidence"),
                     "estimated_width_mm": det.get("estimated_width"),
                     "estimated_length_m": det.get("estimated_length"),

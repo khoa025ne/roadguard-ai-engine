@@ -101,6 +101,102 @@ class TestRoadGuardAIPipeline(unittest.TestCase):
         self.assertAlmostEqual(lat, 10.762622, places=6)
         self.assertAlmostEqual(lon, 106.660172, places=6)
 
+    def test_target_band_classifier(self):
+        """Kiểm tra phân loại TargetBand theo chiều bay xuôi và bay ngược."""
+        from src.inference.tiling_engine import TargetBandClassifier
+
+        # 1. Bay xuôi chiều lý trình
+        box_left = [50, 100, 150, 200]    # x_center = 100 / 2720 = 0.036 (< 0.15)
+        box_center = [1200, 100, 1400, 200] # x_center = 1300 / 2720 = 0.477
+        box_right = [2500, 100, 2650, 200] # x_center = 2575 / 2720 = 0.946 (> 0.85)
+
+        self.assertEqual(TargetBandClassifier.classify(box_left, is_forward=True), "LEFT_EDGE")
+        self.assertEqual(TargetBandClassifier.classify(box_center, is_forward=True), "SURFACE")
+        self.assertEqual(TargetBandClassifier.classify(box_right, is_forward=True), "RIGHT_EDGE")
+
+        # 2. Bay ngược chiều lý trình: Quy ước không đổi -> Mép trái camera thành RIGHT_EDGE, mép phải thành LEFT_EDGE
+        self.assertEqual(TargetBandClassifier.classify(box_left, is_forward=False), "RIGHT_EDGE")
+        self.assertEqual(TargetBandClassifier.classify(box_center, is_forward=False), "SURFACE")
+        self.assertEqual(TargetBandClassifier.classify(box_right, is_forward=False), "LEFT_EDGE")
+
+        # 3. Kiểm tra tính chiều bay theo góc azimuth
+        # Tuyến đường hướng Đông (90 độ), Drone bay hướng Đông (85 độ) -> Chênh 5 độ <= 90 -> Xuôi
+        self.assertTrue(TargetBandClassifier.is_forward_flight(flight_heading_deg=85.0, road_azimuth_deg=90.0))
+        # Drone bay ngược lại hướng Tây (270 độ) -> Chênh 180 độ > 90 -> Ngược
+        self.assertFalse(TargetBandClassifier.is_forward_flight(flight_heading_deg=270.0, road_azimuth_deg=90.0))
+
+    def test_context_overlap_handler(self):
+        """Kiểm tra phát hiện vùng đệm biên giữa các ProcessingBlock."""
+        from src.inference.tiling_engine import ContextOverlapHandler
+
+        # Phạm vi chính của Block: [0.0m - 500.0m]
+        # Khuyết tật ở lý trình 250m -> Nằm trong phạm vi chính -> Không phải overlap
+        self.assertFalse(ContextOverlapHandler.is_overlap_detection(250.0, 0.0, 500.0))
+
+        # Khuyết tật ở lý trình 520m -> Vượt ngoài phạm vi chính -> Là context overlap
+        self.assertTrue(ContextOverlapHandler.is_overlap_detection(520.0, 0.0, 500.0))
+        # Khuyết tật ở lý trình -15m -> Trước điểm đầu -> Là context overlap
+        self.assertTrue(ContextOverlapHandler.is_overlap_detection(-15.0, 0.0, 500.0))
+
+    def test_idempotency_and_error_classification(self):
+        """Kiểm tra cơ chế Idempotency SHA256 và phân loại lỗi chuẩn hợp đồng."""
+        from src.contracts.idempotency import IdempotencyManager, ErrorClassifier
+
+        mgr = IdempotencyManager()
+        key1 = mgr.generate_key("block-1", "v1.0", "chk-abc")
+        key2 = mgr.generate_key("block-1", "v1.0", "chk-abc")
+        key3 = mgr.generate_key("block-2", "v1.0", "chk-abc")
+
+        self.assertEqual(key1, key2)
+        self.assertNotEqual(key1, key3)
+
+        # Lưu và lấy cache
+        mgr.save_result(key1, {"status": "COMPLETED", "detections": []})
+        cached = mgr.get_cached_result(key1)
+        self.assertIsNotNone(cached)
+        self.assertEqual(cached["result"]["status"], "COMPLETED")
+
+        # Phân loại lỗi
+        err_infra = ErrorClassifier.format_error_response("job-1", "GPU_OUT_OF_MEMORY")
+        self.assertEqual(err_infra["error_type"], "INFRASTRUCTURE_ERROR")
+        self.assertTrue(err_infra["retryable"])
+
+        err_data = ErrorClassifier.format_error_response("job-2", "LOW_QUALITY_BLUR")
+        self.assertEqual(err_data["error_type"], "DATA_ERROR")
+        self.assertFalse(err_data["retryable"])
+
+    def test_api_worker_endpoints(self):
+        """Kiểm tra các endpoints của FastAPI Worker Service."""
+        from fastapi.testclient import TestClient
+        from src.api.worker_service import app
+
+        client = TestClient(app)
+
+        # Test health check
+        resp = client.get("/health")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["status"], "healthy")
+
+        # Test submit mock job
+        manifest_payload = {
+            "manifest_id": "test-manifest-001",
+            "processing_job_id": "test-job-unit-001",
+            "processing_block_id": "test-block-001",
+            "target_band": "SURFACE",
+            "road_width_m": 3.5,
+            "is_mock": True
+        }
+        submit_resp = client.post("/api/v1/jobs/submit", json=manifest_payload)
+        self.assertEqual(submit_resp.status_code, 202)
+        self.assertEqual(submit_resp.json()["processing_job_id"], "test-job-unit-001")
+        self.assertIn("idempotency_key", submit_resp.json())
+
+        # Test query job status
+        status_resp = client.get("/api/v1/jobs/test-job-unit-001/status")
+        self.assertEqual(status_resp.status_code, 200)
+        self.assertIn(status_resp.json()["status"], ["QUEUED", "RUNNING", "COMPLETED"])
+
 
 if __name__ == "__main__":
     unittest.main()
+
