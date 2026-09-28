@@ -29,7 +29,7 @@ class RoadDefectPredictor:
 
     CLASS_NAMES_VN = {
         0: "Ổ gà",
-        1: "Nứt dọc",
+        1: "Vết nứt",
         2: "Nứt ngang",
         3: "Nứt chân chim",
         4: "Nứt mép",

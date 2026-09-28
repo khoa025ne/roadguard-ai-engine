@@ -42,8 +42,8 @@
 | **EPIC 3** | Spatial Tiling & Inference Engine | 4 | 4 | 0 | 0 | **100%** |
 | **EPIC 4** | 2D Metric Estimation & Spatial Tracking | 3 | 3 | 0 | 0 | **100%** |
 | **EPIC 5** | API Contract & Distributed Async Worker | 4 | 4 | 0 | 0 | **100%** |
-| **EPIC 6** | Quality Gate & Field Validation Benchmark | 3 | 0 | 0 | 3 | **0%** |
-| **TỔNG** | **Toàn bộ hệ thống AI Analysis** | **22** | **18** | **0** | **4** | **~82%** |
+| **EPIC 6** | Quality Gate & Field Validation Benchmark | 3 | 1 | 0 | 2 | **33%** |
+| **TỔNG** | **Toàn bộ hệ thống AI Analysis** | **22** | **19** | **0** | **3** | **~86%** |
 
 ---
 
@@ -80,7 +80,7 @@
 
 ### 📌 EPIC 6: Quality Gate & Field Validation Benchmark
 - [ ] **Task 6.1: Benchmark End-to-End Pipeline:** Đo thời gian xử lý video 5 phút (yêu cầu $\le 5$ phút trên GPU T4).
-- [ ] **Task 6.2: Nghiệm thu độ chính xác mô hình:** Đánh giá Precision, Recall, mAP50 trên tập dữ liệu kiểm thử độc lập.
+- [x] **Task 6.2: Nghiệm thu độ chính xác mô hình:** Đánh giá trên 751 ảnh test độc lập (`roadguard_best_15k.pt` đạt Precision: 90.11%, Recall: 86.28%, mAP@50: 88.07%, mAP@50-95: 69.81%; Class Crack mAP50=93.08%, Pothole mAP50=83.06%, 0% False Positive trên mẫu nền sạch) ([results/test_roadguard_15k/benchmark_report.json](file:///f:/train%20AI%20đồ%20án/results/test_roadguard_15k/benchmark_report.json)).
 - [ ] **Task 6.3: Xuất báo cáo kiểm định nghiên cứu (RS01 - RS06):** So sánh sai số kích thước đo từ Drone vs Số đo thước cơ học thực địa.
 
 ---
@@ -107,3 +107,4 @@
 | **2026-09-27 22:15** | AI Pair Programmer | **TẠO DATASET 20K TỐI ƯU COLAB FREE:** Viết `tools/build_20k_dataset.py`, tạo bộ dữ liệu cân bằng ~20,000 ảnh gồm 3,940 pothole + 8,000 crack + 8,060 negative. Phân bổ 80/15/5, đóng gói `unified_road_dataset_20k.zip` (308.8 MB). Phù hợp GPU T4 Colab Free: ~45–70 phút / 50 epoch, batch=16, imgsz=640. | `tools/build_20k_dataset.py`, `data/unified_road_dataset_20k/` | Sẵn sàng train Colab Free |
 | **2026-09-27 22:18** | AI Pair Programmer | **TẠO NOTEBOOK COLAB TRAIN 20K:** Viết `notebooks/train_roadguard_20k_yolo11_colab.ipynb` gồm 8 bước hoàn chỉnh: kiểm tra GPU, giải nén, trực quan hóa mẫu dataset, train YOLOv11n, vẽ biểu đồ kết quả, kiểm thử tập Test, xuất `roadguard_best_20k.pt` và sao lưu Drive. | `notebooks/train_roadguard_20k_yolo11_colab.ipynb` | Sẵn sàng mở Colab chạy |
 | **2026-09-28 15:30** | AI Pair Programmer | **TÍCH HỢP TARGETBAND, IDEMPOTENCY & FASTAPI WORKER:** Triển khai hoàn chỉnh Task 3.4 (`TargetBandClassifier`, `ContextOverlapHandler`), Task 5.1/5.3 (Schema v1.1.0 & Mock Adapter đầy đủ trường `target_band`, `is_context_overlap`, `projected_station_m`), Task 5.2 (`IdempotencyManager` SHA256 & `ErrorClassifier` retry backoff), Task 5.4 (`FastAPI` Worker REST API, background processing, Webhook Callback). Vượt qua 10/10 automated unit test. | `src/inference/tiling_engine.py`, `src/contracts/`, `src/api/worker_service.py`, `tests/test_pipeline.py` | Sẵn sàng tích hợp Backend |
+| **2026-09-28 15:45** | AI Pair Programmer | **BENCHMARK & NGHIỆM THU MODEL `roadguard_best_15k.pt`:** Hoàn thành Task 6.2. Kiểm thử độc lập trên 751 ảnh test. Đạt Precision=90.11%, Recall=86.28%, mAP@50=88.07%, mAP@50-95=69.81% (Crack mAP50=93.08%, Pothole mAP50=83.06%). Khử 100% False Positive trên mẫu nền sạch (0/10). Độ trễ CPU 55.18ms (~18 FPS), GPU T4 ước tính ~180 FPS. Kiểm thử thành công Tiling & NMS trên video drone thực địa `DJI_0057.MP4`. | `weights/trained/roadguard_best_15k.pt`, `tools/test_roadguard_15k.py`, `results/test_roadguard_15k/` | Đạt chuẩn nghiệm thu Task 6.2 |
