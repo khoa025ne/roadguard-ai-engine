@@ -85,14 +85,44 @@ class RoadDefectPredictor:
 
     def get_class_color(self, cls_id: int) -> tuple[int, int, int]:
         """Lấy mã màu BGR cho class_id từ PALETTE mà không hardcode."""
-        return self.PALETTE[cls_id % len(self.PALETTE)]
+        try:
+            idx = abs(int(cls_id))
+        except (ValueError, TypeError):
+            idx = 0
+        if not self.PALETTE:
+            return (0, 255, 0)
+        return self.PALETTE[idx % len(self.PALETTE)]
 
     def get_class_name(self, cls_id: int) -> str:
-        """Lấy tên tiếng Anh chuẩn hóa từ class_map.json hoặc model.names."""
-        return self.class_map.get(cls_id, self.model.names.get(cls_id, f"class_{cls_id}"))
+        """Lấy tên tiếng Anh chuẩn hóa từ class_map.json hoặc model.names, fallback gracefully."""
+        try:
+            cls_int = int(cls_id)
+        except (ValueError, TypeError):
+            cls_int = -1
+
+        # 1. Tra cứu trong class_map (ưu tiên int rồi str)
+        if isinstance(self.class_map, dict):
+            if cls_int in self.class_map:
+                return str(self.class_map[cls_int])
+            if str(cls_id) in self.class_map:
+                return str(self.class_map[str(cls_id)])
+
+        # 2. Tra cứu trong model.names
+        names = getattr(self.model, "names", None)
+        if isinstance(names, dict):
+            if cls_int in names:
+                return str(names[cls_int])
+            if str(cls_id) in names:
+                return str(names[str(cls_id)])
+        elif isinstance(names, (list, tuple)):
+            if 0 <= cls_int < len(names):
+                return str(names[cls_int])
+
+        # 3. Fallback an toàn, không bao giờ crash
+        return f"class_{cls_id}"
 
     def get_class_name_vn(self, cls_id: int) -> str:
-        """Lấy tên tiếng Việt tương ứng."""
+        """Lấy tên tiếng Việt tương ứng, fallback gracefully."""
         eng_name = self.get_class_name(cls_id)
         return self.NAME_TO_VN.get(eng_name, eng_name)
 
