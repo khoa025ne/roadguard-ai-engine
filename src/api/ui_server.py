@@ -116,13 +116,13 @@ async def get_init_info():
     preset_videos = []
     if SYNTHETIC_VIDEO.exists():
         preset_videos.append({
-            "name": f"🎬 {SYNTHETIC_VIDEO.name} (Video ghép từ 60 ảnh Dataset)",
+            "name": f"[Video Ghép] {SYNTHETIC_VIDEO.name} (60 ảnh Dataset)",
             "path": str(SYNTHETIC_VIDEO).replace("\\", "/"),
             "size_mb": round(SYNTHETIC_VIDEO.stat().st_size / (1024 * 1024), 2),
         })
     if PRESET_VIDEO.exists():
         preset_videos.append({
-            "name": f"📹 {PRESET_VIDEO.name} (Video thực địa Flycam gốc)",
+            "name": f"[Video Thực Địa] {PRESET_VIDEO.name} (Flycam gốc)",
             "path": str(PRESET_VIDEO).replace("\\", "/"),
             "size_mb": round(PRESET_VIDEO.stat().st_size / (1024 * 1024), 1),
         })
@@ -131,14 +131,14 @@ async def get_init_info():
     sample_zip = WORKSPACE_ROOT / "data/sample_dataset_test.zip"
     if sample_zip.exists():
         preset_datasets.append({
-            "name": f"📦 {sample_zip.name} (5 ảnh mẫu Pothole Test)",
+            "name": f"[ZIP Mẫu] {sample_zip.name} (5 ảnh Pothole Test)",
             "path": str(sample_zip).replace("\\", "/"),
             "size_mb": round(sample_zip.stat().st_size / (1024 * 1024), 2)
         })
     pothole_5k_zip = WORKSPACE_ROOT / "data/pothole_dataset_5k.zip"
     if pothole_5k_zip.exists():
         preset_datasets.append({
-            "name": "⚡ pothole_dataset_5k.zip (5,000 ảnh Ổ Gà Tối Ưu Colab Free)",
+            "name": "[ZIP 5K] pothole_dataset_5k.zip (5,000 ảnh Ổ gà)",
             "path": str(pothole_5k_zip).replace("\\", "/"),
             "size_mb": round(pothole_5k_zip.stat().st_size / (1024 * 1024), 1)
         })
@@ -146,7 +146,7 @@ async def get_init_info():
     pothole_dir = WORKSPACE_ROOT / "data/pothole/test/images"
     if pothole_dir.exists():
         preset_datasets.append({
-            "name": "📁 data/pothole/test/images (198 ảnh Test Pothole)",
+            "name": "[Folder Test] data/pothole/test/images (198 ảnh Test Pothole)",
             "path": str(pothole_dir).replace("\\", "/"),
             "size_mb": 0.0
         })
@@ -154,7 +154,7 @@ async def get_init_info():
     dataset_15k_test = WORKSPACE_ROOT / "data/unified_road_dataset_15k/test/images"
     if dataset_15k_test.exists():
         preset_datasets.append({
-            "name": "🔥 data/unified_road_dataset_15k/test/images (751 ảnh Test 15K: Pothole & Crack)",
+            "name": "[Folder 15K] data/unified_road_dataset_15k/test/images (751 ảnh Test 15K: Pothole & Crack)",
             "path": str(dataset_15k_test).replace("\\", "/"),
             "size_mb": 0.0
         })
@@ -162,7 +162,7 @@ async def get_init_info():
     dataset_15k_valid = WORKSPACE_ROOT / "data/unified_road_dataset_15k/valid/images"
     if dataset_15k_valid.exists():
         preset_datasets.append({
-            "name": "📂 data/unified_road_dataset_15k/valid/images (2,056 ảnh Val 15K)",
+            "name": "[Folder Val] data/unified_road_dataset_15k/valid/images (2,056 ảnh Val 15K)",
             "path": str(dataset_15k_valid).replace("\\", "/"),
             "size_mb": 0.0
         })
