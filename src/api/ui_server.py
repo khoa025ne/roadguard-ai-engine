@@ -26,14 +26,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.inference.predictor import RoadDefectPredictor
 from src.curation import AIAutoTagger, DatasetExporter
 from src.ingestion.dataset_scanner import DatasetScanner
+from src.pipeline.pipeline import run_video_analysis_task
 
 # Thiết lập đường dẫn thư mục gốc
-WORKSPACE_ROOT = Path("F:/train AI đồ án")
+WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = WORKSPACE_ROOT / "src/api/web"
 RESULTS_DIR = WORKSPACE_ROOT / "results/web_runs"
 UPLOADS_DIR = WORKSPACE_ROOT / "results/web_uploads"
 WEIGHTS_DIR = WORKSPACE_ROOT / "weights"
-PRESET_VIDEO = Path("F:/Fake_admin/Downloads/đồ án test vid/DJI_0057.MP4")
+PRESET_VIDEO = WORKSPACE_ROOT / "data/raw_videos/DJI_0057.MP4"
+if not PRESET_VIDEO.exists():
+    PRESET_VIDEO = Path("F:/Fake_admin/Downloads/đồ án test vid/DJI_0057.MP4")
 SYNTHETIC_VIDEO = WORKSPACE_ROOT / "results/test_videos/dataset_road_survey_test.mp4"
 
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -271,13 +274,10 @@ async def serve_crop_file(task_id: str, filename: str):
 
 
 def execute_analysis_sync(task_id: str, req: AnalysisRequest):
-    """Hàm chạy ngầm phân tích video và xuất kết quả trực quan."""
+    """Hàm chạy ngầm phân tích video qua Pipeline Tuyến Tính Kiến Trúc A (7 stages)."""
     task = TASKS_STORE[task_id]
     task_dir = RESULTS_DIR / task_id
-    frames_dir = task_dir / "frames"
-    crops_dir = task_dir / "crops"
-    frames_dir.mkdir(parents=True, exist_ok=True)
-    crops_dir.mkdir(parents=True, exist_ok=True)
+    task_dir.mkdir(parents=True, exist_ok=True)
 
     video_path = Path(req.video_path)
     if not video_path.exists():
@@ -285,190 +285,28 @@ def execute_analysis_sync(task_id: str, req: AnalysisRequest):
         task["error"] = f"Không tìm thấy file video: {req.video_path}"
         return
 
-    # Khởi tạo mô hình
-    task["message"] = "Đang nạp mô hình AI..."
+    task["message"] = "Đang khởi chạy Pipeline Tuyến Tính (Kiến Trúc A: 7 Stages)..."
+    task["progress_pct"] = 15.0
+
     try:
-        predictor = RoadDefectPredictor(req.model_path, conf_threshold=req.conf_threshold)
+        report_data = run_video_analysis_task(
+            video_path=video_path,
+            model_path=req.model_path,
+            task_id=task_id,
+            output_dir=task_dir,
+            conf_threshold=req.conf_threshold,
+            max_duration_seconds=req.max_duration_seconds,
+            sampling_rate_fps=req.sampling_rate_fps,
+            use_tiling=req.use_tiling
+        )
+
+        task["status"] = "COMPLETED"
+        task["progress_pct"] = 100.0
+        task["message"] = "Hoàn tất phân tích qua Pipeline Tuyến Tính!"
+        task["results"] = report_data
     except Exception as e:
         task["status"] = "FAILED"
-        task["error"] = f"Lỗi nạp mô hình: {str(e)}"
-        return
-
-    cap = cv2.VideoCapture(str(video_path))
-    if not cap.isOpened():
-        task["status"] = "FAILED"
-        task["error"] = "Không thể mở file video với OpenCV"
-        return
-
-    orig_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-    total_vid_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    video_dur_sec = total_vid_frames / orig_fps
-
-    # Tính toán khoảng bước frame cần đọc
-    target_fps = max(1, req.sampling_rate_fps)
-    frame_step = max(1, int(round(orig_fps / target_fps)))
-
-    if req.max_duration_seconds > 0:
-        max_frames_to_read = min(total_vid_frames, int(req.max_duration_seconds * orig_fps))
-    else:
-        max_frames_to_read = total_vid_frames
-
-    total_samples = max(1, len(range(0, max_frames_to_read, frame_step)))
-    task["total_frames"] = total_samples
-    task["message"] = f"Đang trích xuất và phân tích {total_samples} khung hình..."
-
-    detected_frames = []
-    crops_list = []
-    all_defects = []
-    pothole_count = 0
-    crack_count = 0
-    processed_count = 0
-
-    t_start = time.perf_counter()
-
-    for frame_idx in range(0, max_frames_to_read, frame_step):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-        ret, frame = cap.read()
-        if not ret or frame is None:
-            break
-
-        processed_count += 1
-        timestamp_s = round(frame_idx / orig_fps, 2)
-
-        # Chạy inference (Tiling hoặc trực tiếp)
-        detections = predictor.predict_full_frame(frame, use_tiling=req.use_tiling)
-
-        frame_potholes = 0
-        frame_cracks = 0
-
-        if len(detections) > 0:
-            # Vẽ Bounding Box lên ảnh
-            annotated_frame = predictor.visualize(frame, detections)
-            frame_filename = f"frame_{processed_count:04d}_{timestamp_s}s.jpg"
-            frame_save_path = frames_dir / frame_filename
-            safe_imwrite(frame_save_path, annotated_frame)
-
-            h, w = frame.shape[:2]
-
-            # Cắt ảnh cận cảnh (Crops) từng khuyết tật
-            for d_idx, d in enumerate(detections):
-                x1, y1, x2, y2 = d["box"]
-                cls_name = d["class_name"]
-                conf = d["confidence"]
-
-                if cls_name == "pothole":
-                    pothole_count += 1
-                    frame_potholes += 1
-                    cls_vn = "Ổ gà"
-                else:
-                    crack_count += 1
-                    frame_cracks += 1
-                    cls_vn = "Vết nứt"
-
-                # Padding 15px cho ảnh crop
-                pad = 15
-                cx1 = max(0, x1 - pad)
-                cy1 = max(0, y1 - pad)
-                cx2 = min(w, x2 + pad)
-                cy2 = min(h, y2 + pad)
-
-                crop_img = frame[cy1:cy2, cx1:cx2]
-                crop_filename = f"crop_{processed_count:04d}_{d_idx+1}_{cls_name}.jpg"
-                crop_save_path = crops_dir / crop_filename
-                if crop_img.size > 0:
-                    safe_imwrite(crop_save_path, crop_img)
-
-                crop_info = {
-                    "url": f"/static_results/{task_id}/crops/{crop_filename}",
-                    "class_name": cls_name,
-                    "class_vn": cls_vn,
-                    "confidence": conf,
-                    "timestamp_s": timestamp_s,
-                    "box": d["box"]
-                }
-                crops_list.append(crop_info)
-
-                defect_record = {
-                    "frame_index": processed_count,
-                    "timestamp_s": timestamp_s,
-                    "class_name": cls_name,
-                    "class_vn": cls_vn,
-                    "confidence": conf,
-                    "box": d["box"],
-                    "crop_url": crop_info["url"]
-                }
-                all_defects.append(defect_record)
-
-            detected_frames.append({
-                "frame_index": processed_count,
-                "timestamp_s": timestamp_s,
-                "annotated_url": f"/static_results/{task_id}/frames/{frame_filename}",
-                "defects_count": len(detections),
-                "pothole_count": frame_potholes,
-                "crack_count": frame_cracks,
-            })
-
-        # Cập nhật tiến độ
-        pct = (processed_count / total_samples) * 100.0
-        task["progress_pct"] = round(pct, 1)
-        task["processed_frames"] = processed_count
-        task["defects_found"] = len(all_defects)
-        task["message"] = f"Đang phân tích khung hình {processed_count}/{total_samples} (Tìm thấy {len(all_defects)} khuyết tật)..."
-
-    cap.release()
-    total_time = time.perf_counter() - t_start
-    fps_calc = round(processed_count / max(0.01, total_time), 2)
-
-    # Xuất file báo cáo JSON
-    report_data = {
-        "task_id": task_id,
-        "video_path": str(video_path),
-        "model_path": req.model_path,
-        "summary": {
-            "processed_frames": processed_count,
-            "total_defects": len(all_defects),
-            "pothole_count": pothole_count,
-            "crack_count": crack_count,
-            "fps": fps_calc,
-            "total_time_seconds": round(total_time, 2)
-        },
-        "frames": detected_frames,
-        "crops": crops_list,
-        "all_defects": all_defects
-    }
-
-    report_path = task_dir / "inspection_report.json"
-    with open(report_path, "w", encoding="utf-8") as f:
-        json.dump(report_data, f, ensure_ascii=False, indent=2)
-
-    # Xuất file GeoJSON (tọa độ pixel chuẩn hóa nếu không có SRT)
-    features = []
-    for d in all_defects:
-        features.append({
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [d["box"][0], d["box"][1]]
-            },
-            "properties": {
-                "class_name": d["class_name"],
-                "class_vn": d["class_vn"],
-                "confidence": d["confidence"],
-                "timestamp_s": d["timestamp_s"]
-            }
-        })
-    geojson_data = {
-        "type": "FeatureCollection",
-        "features": features
-    }
-    geojson_path = task_dir / "inspection_layer.geojson"
-    with open(geojson_path, "w", encoding="utf-8") as f:
-        json.dump(geojson_data, f, ensure_ascii=False, indent=2)
-
-    task["status"] = "COMPLETED"
-    task["progress_pct"] = 100.0
-    task["message"] = "Hoàn tất phân tích toàn bộ khung hình!"
-    task["results"] = report_data
+        task["error"] = f"Lỗi trong quá trình phân tích Pipeline: {str(e)}"
 
 
 @app.post("/api/start-analysis")

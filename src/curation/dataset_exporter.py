@@ -5,6 +5,7 @@ src/curation/dataset_exporter.py — Module Đóng Gói Dataset Chuẩn YOLO
 - Chuẩn hóa Bounding Box [x1, y1, x2, y2] về không gian [x_center, y_center, w, h] (0.0 - 1.0).
 - Phân luồng train / val (80/20) và tạo nhãn rỗng cho mẫu âm tính (Hard Negatives).
 - Xuất file cấu hình data.yaml và nén thành tệp .zip sẵn sàng nạp thẳng lên Colab/Kaggle.
+- Đọc class mapping động từ class_map.json, không hardcode class ID.
 """
 
 import os
@@ -15,15 +16,36 @@ import time
 import cv2
 import numpy as np
 from pathlib import Path
+from collections import defaultdict
 from typing import Dict, Any, List, Optional
+
+
+def load_taxonomy(custom_path: Optional[str | Path] = None) -> Dict[int, str]:
+    """Tải bảng ánh xạ class_map.json động từ thư mục gốc."""
+    candidates = []
+    if custom_path:
+        candidates.append(Path(custom_path))
+    candidates.extend([
+        Path("class_map.json").resolve(),
+        Path(__file__).resolve().parent.parent.parent / "class_map.json"
+    ])
+    for c in candidates:
+        if c.exists():
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    return {int(k): str(v) for k, v in json.load(f).items()}
+            except Exception:
+                pass
+    return {0: "pothole", 1: "crack", 2: "bong_troc"}
 
 
 class DatasetExporter:
     """Đóng gói dữ liệu khuyết tật đã tinh tuyển thành Dataset chuẩn YOLO."""
 
-    def __init__(self, base_export_dir: Path | str = "F:/train AI đồ án/data/curated_export"):
+    def __init__(self, base_export_dir: Path | str = "data/curated_export", class_map_path: Optional[str | Path] = None):
         self.base_export_dir = Path(base_export_dir)
         self.base_export_dir.mkdir(parents=True, exist_ok=True)
+        self.class_map = load_taxonomy(class_map_path)
 
     def export_yolo_dataset(
         self,
@@ -34,9 +56,9 @@ class DatasetExporter:
         """
         Đóng gói danh sách khuyết tật thành Dataset YOLO.
         """
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        exp_id = export_name or f"curated_batch_{timestamp}"
+        exp_id = export_name or f"curated_batch_{time.strftime('%Y%m%d_%H%M%S')}"
         target_dir = self.base_export_dir / exp_id
+        target_dir.mkdir(parents=True, exist_ok=True)
 
         # Tạo cấu trúc thư mục
         train_img_dir = target_dir / "train" / "images"
@@ -62,44 +84,38 @@ class DatasetExporter:
                     frame_detections[f_key] = []
                 frame_detections[f_key].append(item)
 
-        total_frames = len(frame_detections)
         all_keys = list(frame_detections.keys())
-        # Phân chia 80% train, 20% val
         split_idx = max(1, int(len(all_keys) * 0.8)) if len(all_keys) > 1 else len(all_keys)
         train_keys = set(all_keys[:split_idx])
 
         pos_count = 0
-        pothole_count = 0
-        crack_count = 0
+        class_counts: Dict[str, int] = defaultdict(int)
 
         # Xử lý các mẫu khuyết tật hợp lệ
         for f_key, dets in frame_detections.items():
-            first_det = dets[0]
-            raw_frame_path = first_det.get("frame_path") or frames_lookup.get(f_key)
+            raw_frame_path = frames_lookup.get(f_key)
+            if not raw_frame_path:
+                first_d = dets[0]
+                raw_frame_path = first_d.get("frame_path") or first_d.get("frame_file")
 
             if not raw_frame_path or not Path(raw_frame_path).exists():
-                # Nếu không có frame gốc thì dùng ảnh crop của từng detection
                 for d in dets:
-                    crop_p = Path(d["crop_path"])
+                    crop_p = Path(d.get("crop_path", ""))
                     if crop_p.exists():
                         is_train = (f_key in train_keys)
                         dest_img = (train_img_dir if is_train else val_img_dir) / crop_p.name
                         dest_lbl = (train_lbl_dir if is_train else val_lbl_dir) / f"{crop_p.stem}.txt"
                         shutil.copy2(crop_p, dest_img)
 
-                        cls_id = d.get("yolo_class_id", 0)
-                        if cls_id == 0:
-                            pothole_count += 1
-                        else:
-                            crack_count += 1
+                        cls_id = int(d.get("yolo_class_id", 0))
+                        c_name = self.class_map.get(cls_id, f"class_{cls_id}")
+                        class_counts[c_name] += 1
                         pos_count += 1
 
-                        # Bounding box chiếm trọn ảnh crop: center 0.5, 0.5, w 0.9, h 0.9
                         with open(dest_lbl, "w", encoding="utf-8") as lf:
                             lf.write(f"{cls_id} 0.500000 0.500000 0.900000 0.900000\n")
                 continue
 
-            # Đọc frame gốc để lấy kích thước W, H
             raw_frame_path = Path(raw_frame_path)
             try:
                 frame_mat = cv2.imdecode(np.fromfile(str(raw_frame_path), dtype=np.uint8), cv2.IMREAD_COLOR)
@@ -116,12 +132,10 @@ class DatasetExporter:
 
             shutil.copy2(raw_frame_path, dest_img)
 
-            # Tạo file nhãn YOLO chuẩn hóa
             with open(dest_lbl, "w", encoding="utf-8") as lf:
                 for d in dets:
                     box = d.get("box", [0, 0, 0, 0])
                     x1, y1, x2, y2 = box
-                    # Giới hạn tọa độ trong ảnh
                     x1 = max(0, min(fw - 1, x1))
                     y1 = max(0, min(fh - 1, y1))
                     x2 = max(0, min(fw, x2))
@@ -132,22 +146,18 @@ class DatasetExporter:
                     if bw <= 1 or bh <= 1:
                         continue
 
-                    # Chuyển đổi sang normalized xywh
                     x_center = (x1 + bw / 2.0) / fw
                     y_center = (y1 + bh / 2.0) / fh
                     norm_w = bw / fw
                     norm_h = bh / fh
-                    cls_id = d.get("yolo_class_id", 0)
-
-                    if cls_id == 0:
-                        pothole_count += 1
-                    else:
-                        crack_count += 1
+                    cls_id = int(d.get("yolo_class_id", 0))
+                    c_name = self.class_map.get(cls_id, f"class_{cls_id}")
+                    class_counts[c_name] += 1
                     pos_count += 1
 
                     lf.write(f"{cls_id} {x_center:.6f} {y_center:.6f} {norm_w:.6f} {norm_h:.6f}\n")
 
-        # Xử lý các mẫu âm tính (Hard Negatives)
+        # Xử lý Hard Negatives
         neg_count = 0
         for neg in hard_negatives:
             crop_p = Path(neg.get("crop_path", ""))
@@ -155,12 +165,14 @@ class DatasetExporter:
                 dest_neg_img = neg_img_dir / crop_p.name
                 dest_neg_lbl = neg_lbl_dir / f"{crop_p.stem}.txt"
                 shutil.copy2(crop_p, dest_neg_img)
-                # File rỗng (0 bytes) cho nhãn âm tính
                 with open(dest_neg_lbl, "w", encoding="utf-8") as lf:
                     pass
                 neg_count += 1
 
-        # Tạo file data.yaml
+        # Tạo file data.yaml động theo class_map.json
+        names_list = [self.class_map[k] for k in sorted(self.class_map.keys())]
+        breakdown_lines = "\n".join([f"# - {name}: {class_counts.get(name, 0)}" for name in names_list])
+
         data_yaml_content = f"""# RoadGuard AI — Curated Fine-Tuning Dataset Patch
 # Tự động xuất xưởng từ Module AI Curation & Auto-Tagger
 # Ngày tạo: {time.strftime("%Y-%m-%d %H:%M:%S")}
@@ -168,26 +180,25 @@ class DatasetExporter:
 train: train/images
 val:   val/images
 
-nc: 2
-names: ['pothole', 'crack']
+nc: {len(names_list)}
+names: {names_list}
 
-# Phân bổ mẫu:
-# - Mẫu Ổ gà (pothole): {pothole_count}
-# - Mẫu Vết nứt (crack): {crack_count}
+# Phân bổ mẫu theo taxonomy:
+{breakdown_lines}
 # - Mẫu Báo động giả (hard negatives): {neg_count}
 """
         yaml_path = target_dir / "data.yaml"
         with open(yaml_path, "w", encoding="utf-8") as yf:
             yf.write(data_yaml_content)
 
-        # Xuất file báo cáo chi tiết
         summary_data = {
             "export_id": exp_id,
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "total_items_curated": len(curated_items),
             "positive_defects_count": pos_count,
-            "pothole_count": pothole_count,
-            "crack_count": crack_count,
+            "class_counts": dict(class_counts),
+            "pothole_count": class_counts.get("pothole", 0),
+            "crack_count": class_counts.get("crack", 0),
             "hard_negatives_count": neg_count,
             "target_dir": str(target_dir).replace("\\", "/"),
             "items": curated_items
@@ -196,7 +207,7 @@ names: ['pothole', 'crack']
         with open(summary_path, "w", encoding="utf-8") as sf:
             json.dump(summary_data, sf, ensure_ascii=False, indent=2)
 
-        # Nén toàn bộ thư mục thành file .zip
+        # Nén thư mục thành file .zip
         zip_output_path = self.base_export_dir / f"{exp_id}.zip"
         with zipfile.ZipFile(zip_output_path, "w", zipfile.ZIP_DEFLATED) as zipf:
             for root, _, files in os.walk(target_dir):
@@ -209,11 +220,17 @@ names: ['pothole', 'crack']
         zip_size_mb = round(zip_size_bytes / (1024 * 1024), 3)
 
         return {
-            "status": "SUCCESS",
             "export_id": exp_id,
+            "status": "SUCCESS",
+            "positive_count": pos_count,
+            "class_counts": dict(class_counts),
+            "negative_count": neg_count,
+            "export_dir": str(target_dir).replace("\\", "/"),
+            "zip_path": str(zip_output_path).replace("\\", "/"),
             "zip_file": str(zip_output_path).replace("\\", "/"),
             "zip_filename": zip_output_path.name,
             "zip_size_bytes": zip_size_bytes,
             "zip_size_mb": zip_size_mb,
+            "yaml_path": str(yaml_path).replace("\\", "/"),
             "summary": summary_data
         }

@@ -43,6 +43,33 @@ TAG_MAP = {
 }
 
 
+def _load_class_map() -> Dict[str, int]:
+    """Tải bảng ánh xạ class_map.json để ánh xạ taxonomy động."""
+    for candidate in [Path("class_map.json"), Path(__file__).resolve().parents[2] / "class_map.json"]:
+        if candidate.exists():
+            try:
+                with open(candidate, "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                    return {str(v).lower(): int(k) for k, v in raw.items()}
+            except Exception:
+                pass
+    return {"pothole": 0, "crack": 1, "bong_troc": 2}
+
+
+def resolve_yolo_class_id(raw_tag: str, is_valid: bool) -> int:
+    """Ánh xạ fine tag sang YOLO class ID dựa trên class_map.json."""
+    if not is_valid:
+        return -1
+    tag = raw_tag.lower()
+    cmap = _load_class_map()
+    for name, cid in cmap.items():
+        if name in tag:
+            return cid
+    if "pothole" in tag or "o_ga" in tag:
+        return cmap.get("pothole", 0)
+    return cmap.get("crack", 1)
+
+
 def _load_env_if_exists():
     """Tự động nạp cấu hình bảo mật từ file .env cục bộ nếu có."""
     if os.getenv("KDV_API_KEY"):
@@ -214,13 +241,7 @@ BẮT BUỘC trả về định dạng JSON thuần túy theo cấu trúc:
                     reasoning = str(parsed.get("reasoning", "Được thẩm định bởi KTV AI."))
 
                     friendly_tag = TAG_MAP.get(raw_fine_tag, raw_fine_tag)
-
-                    if not is_valid:
-                        yolo_cls = -1
-                    elif "pothole" in raw_fine_tag:
-                        yolo_cls = 0
-                    else:
-                        yolo_cls = 1
+                    yolo_cls = resolve_yolo_class_id(raw_fine_tag, is_valid)
 
                     # Lấy thông số kỹ thuật chuẩn hóa nếu là vết nứt
                     meta_risk = ""
@@ -472,12 +493,7 @@ BẮT BUỘC chỉ trả về 1 mảng JSON chứa đúng {c_count} phần tử 
                     reasoning = str(entry.get("reasoning", "Thẩm định bối cảnh hoàn tất."))
 
                     friendly_tag = TAG_MAP.get(raw_fine_tag, raw_fine_tag)
-                    if not is_valid:
-                        yolo_cls = -1
-                    elif "pothole" in raw_fine_tag:
-                        yolo_cls = 0
-                    else:
-                        yolo_cls = 1
+                    yolo_cls = resolve_yolo_class_id(raw_fine_tag, is_valid)
 
                     meta_risk = ""
                     meta_recom = ""
@@ -733,12 +749,7 @@ BẮT BUỘC chỉ trả về 1 mảng JSON chứa đúng {b_count} phần tử 
                     reasoning = str(entry.get("reasoning", "Thẩm định tự động bởi KTV."))
 
                     friendly_tag = TAG_MAP.get(raw_fine_tag, raw_fine_tag)
-                    if not is_valid:
-                        yolo_cls = -1
-                    elif "pothole" in raw_fine_tag:
-                        yolo_cls = 0
-                    else:
-                        yolo_cls = 1
+                    yolo_cls = resolve_yolo_class_id(raw_fine_tag, is_valid)
 
                     meta_risk = ""
                     meta_recom = ""

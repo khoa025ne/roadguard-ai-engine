@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from src.ingestion.srt_parser import DJISRTParser
 from src.ingestion.video_extractor import VideoFrameExtractor
-from src.ingestion.raw_video_analyzer import RawVideoAnalyzer
+from src.utils.geo import calculate_defect_ground_coords
 from src.inference.tiling_engine import TileSplitter
 from src.measurement.metric_estimator import MetricEstimator
 from src.measurement.spatial_tracker import SpatialTracker
@@ -86,7 +86,7 @@ class TestRoadGuardAIPipeline(unittest.TestCase):
 
     def test_defect_ground_coords_georeferencing(self):
         """Kiểm tra phép chiếu tâm BBox xuống tọa độ mặt đất WGS84."""
-        lat, lon, method = RawVideoAnalyzer.calculate_defect_ground_coords(
+        lat, lon, method = calculate_defect_ground_coords(
             drone_lat=10.762622,
             drone_lon=106.660172,
             altitude_m=10.0,
