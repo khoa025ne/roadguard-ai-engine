@@ -61,8 +61,10 @@ class LinearPipeline:
         for stage_name, stage_fn in self.stages:
             stage_cfg = ctx.get("config", {}).get("stages", {}).get(stage_name, {})
             if not stage_cfg.get("enabled", True):
+                print(f"[{stage_name}] Bị vô hiệu hóa (disabled).")
                 continue
 
+            print(f"[{stage_name}] Đang thực thi...")
             t0 = time.perf_counter()
             try:
                 ctx = stage_fn(ctx)
@@ -71,7 +73,9 @@ class LinearPipeline:
                 ctx["error"] = f"Lỗi tại giai đoạn {stage_name}: {str(e)}"
                 raise e
             t1 = time.perf_counter()
-            ctx[f"timing_{stage_name}_ms"] = round((t1 - t0) * 1000.0, 2)
+            stage_ms = round((t1 - t0) * 1000.0, 2)
+            ctx[f"timing_{stage_name}_ms"] = stage_ms
+            print(f"[{stage_name}] Hoàn thành trong {stage_ms:.1f} ms.")
 
         return ctx
 

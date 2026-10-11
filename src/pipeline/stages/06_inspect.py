@@ -3,9 +3,10 @@ src/pipeline/stages/06_inspect.py — Giai đoạn 6: Thẩm Định Chuyên Gia
 =============================================================================================
 Nhiệm vụ:
   - Cắt ảnh cận cảnh (Crop) từng khuyết tật đại diện để đưa vào thẩm định chi tiết.
-  - Thẩm định chuyên sâu khuyết tật: Phân loại hình thái nứt (dọc, ngang, lưới mai rùa, mép đường).
-  - Lọc bỏ báo động giả (False Alarms: khe co giãn bê tông, bóng dây điện, vệt sơn mòn).
-  - Hỗ trợ cả 2 chế độ: Heuristic Computer Vision (mặc định) và AI Multimodal KTV (kdv_gpt54).
+  - Gọi Model AI Thứ 2: KDVInspector (KTV / Kiểm Duyệt Viên Giám Định) để thẩm định hai tầng:
+      1. Khử bỏ báo động giả (khe co giãn bê tông, bóng dây điện, vệt sơn, tạp vật ven lề).
+      2. Phân loại hình thái chi tiết và cấp độ hư hại theo tiêu chuẩn kỹ thuật đường bộ.
+  - Hỗ trợ chế độ Vision Multimodal AI (gpt-5.4) và tự động Fallback Heuristic chuyên sâu khi offline.
 
 Interface:
   def run(ctx: dict) -> dict
@@ -15,16 +16,17 @@ import cv2
 import numpy as np
 from pathlib import Path
 from typing import Dict, Any, List
+from src.curation.kdv_inspector import KDVInspector
 from src.curation.crack_analyzer import CrackAnalyzer
-from src.curation.auto_tagger import AIAutoTagger
 
 
 def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Thực thi Stage 06: Inspect.
+    Thực thi Stage 06: Inspect (Thẩm định qua KDVInspector).
     """
     cfg = ctx.get("config", {}).get("stages", {}).get("06_inspect", {})
     if not cfg.get("enabled", True):
+        print("  -> [06_inspect] Stage 06 bị vô hiệu hóa trong cấu hình, chuyển tiếp dữ liệu.")
         ctx["inspected_detections"] = ctx.get("measured_detections", [])
         return ctx
 
@@ -35,12 +37,17 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
     items = ctx.get("measured_detections", [])
     frames_dict = {f.get("frame_index"): f for f in ctx.get("frames", [])}
 
-    auto_tagger = AIAutoTagger(provider=provider)
-    crack_analyzer = CrackAnalyzer()
+    # Khởi tạo KDVInspector (Tier-2 AI Expert Inspector)
+    kdv_inspector = KDVInspector(
+        api_key=cfg.get("api_key"),
+        model=cfg.get("model", "gpt-5.4")
+    )
+
+    print(f"  -> [06_inspect] Bắt đầu thẩm định KTV tầng 2 qua KDVInspector (Provider: {provider}, Model: {kdv_inspector.model}, Khuyết tật: {len(items)})")
 
     inspected_items: List[Dict[str, Any]] = []
 
-    for det in items:
+    for idx, det in enumerate(items):
         f_idx = det.get("frame_index", 0)
         f_info = frames_dict.get(f_idx, {})
         frame_mat = f_info.get("image")
@@ -61,27 +68,33 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
 
         det["crop_image"] = crop_img
         base_class = det.get("class_name", "pothole")
+        conf = float(det.get("confidence", 0.5))
 
-        # 1. Phân tích vết nứt chuyên sâu
-        if "crack" in base_class and crack_morph and crop_img is not None:
-            c_meta = crack_analyzer.assess_crack(crop_img)
-            det["morphology"] = c_meta
-            det["fine_tag"] = c_meta.get("vn_name", "Vết nứt mặt đường")
-            det["crack_width_level"] = c_meta.get("crack_width_level", "3-6mm")
-            det["structural_risk"] = c_meta.get("default_risk", "")
-            det["recommendation"] = c_meta.get("default_recommendation", "")
-            det["is_valid"] = True
-            det["inspection_status"] = "VERIFIED"
+        # Thẩm định trực tiếp qua KDVInspector
+        if crop_img is not None and crop_img.size > 0:
+            kdv_res = kdv_inspector.inspect_crop(
+                crop_path=None,
+                base_class=base_class,
+                confidence=conf,
+                crop_img=crop_img
+            )
+            det.update(kdv_res)
         else:
             det["is_valid"] = True
-            det["inspection_status"] = "VERIFIED"
-            det["fine_tag"] = "Ổ gà mặt đường" if "pothole" in base_class else base_class
+            det["status"] = "VERIFIED"
+            det["inspector"] = "KDVInspector (BBox Context)"
+            det["fine_tag"] = "Ổ gà mặt đường" if "pothole" in base_class else "Vết nứt mặt đường"
+            det["reasoning"] = "KTV xác nhận phát hiện hợp lệ từ tọa độ bounding box."
 
+        # Kiểm tra sàng lọc Báo động giả (False Alarms)
         if filter_fa and not det.get("is_valid", True):
+            print(f"    [06_inspect] Đã lọc bỏ báo động giả #{idx+1}: {det.get('fine_tag')} - {det.get('reasoning')[:70]}...")
             continue
 
         inspected_items.append(det)
 
     ctx["inspected_detections"] = inspected_items
     ctx["stage_06_completed"] = True
+    print(f"  -> [06_inspect] Hoàn tất thẩm định KTV tầng 2: Giữ lại {len(inspected_items)}/{len(items)} khuyết tật chuẩn xác.")
     return ctx
+

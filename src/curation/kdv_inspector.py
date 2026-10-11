@@ -180,17 +180,27 @@ BẮT BUỘC trả về định dạng JSON thuần túy theo cấu trúc:
 
     def inspect_crop(
         self,
-        crop_path: Path | str,
+        crop_path: Optional[Path | str] = None,
         base_class: str = "crack",
-        confidence: float = 0.5
+        confidence: float = 0.5,
+        crop_img: Optional[np.ndarray] = None
     ) -> Dict[str, Any]:
         """
         Gửi 1 ảnh crop tới Model KTV (gpt-5.4) để thẩm định và phân loại chuyên sâu.
+        Hỗ trợ cả file path và numpy ndarray in-memory.
         """
-        crop_path = Path(crop_path)
-        b64_img = self._encode_image_b64(crop_path)
+        b64_img = None
+        if crop_img is not None and isinstance(crop_img, np.ndarray) and crop_img.size > 0:
+            ret, buf = cv2.imencode(".jpg", crop_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+            if ret:
+                b64_img = base64.b64encode(buf).decode("utf-8")
+        elif crop_path is not None:
+            c_p = Path(crop_path)
+            b64_img = self._encode_image_b64(c_p)
 
         if not b64_img:
+            if crop_img is not None:
+                return self._heuristic_fallback(crop_path=None, base_class=base_class, confidence=confidence, reason_msg="In-memory Heuristic", crop_img=crop_img)
             return {
                 "inspector": "KTV (Lỗi nạp ảnh)",
                 "is_valid": False,
@@ -199,13 +209,13 @@ BẮT BUỘC trả về định dạng JSON thuần túy theo cấu trúc:
                 "fine_tag": "Không tìm thấy file ảnh",
                 "severity": "NONE",
                 "confidence_verified": 0.0,
-                "reasoning": f"Không thể đọc file ảnh: {crop_path.name}",
+                "reasoning": f"Không thể đọc file ảnh: {crop_path}",
                 "yolo_class_id": -1
             }
 
         # Nếu không có OpenAI client -> Fallback sang Heuristic CV + CrackAnalyzer
         if not self.is_available:
-            return self._heuristic_fallback(crop_path, base_class, confidence, "OpenAI client chưa được cấu hình")
+            return self._heuristic_fallback(crop_path=crop_path, base_class=base_class, confidence=confidence, reason_msg="OpenAI client chưa được cấu hình", crop_img=crop_img)
 
         prompt_text = self._build_prompt(base_class, confidence)
 
@@ -784,16 +794,19 @@ BẮT BUỘC chỉ trả về 1 mảng JSON chứa đúng {b_count} phần tử 
 
     def _heuristic_fallback(
         self,
-        crop_path: Path,
-        base_class: str,
-        confidence: float,
-        reason_msg: str
+        crop_path: Optional[Path | str] = None,
+        base_class: str = "crack",
+        confidence: float = 0.5,
+        reason_msg: str = "",
+        crop_img: Optional[np.ndarray] = None
     ) -> Dict[str, Any]:
         """Dự phòng khi API Vision ngoại tuyến: Phân tích kết hợp Heuristic & CrackAnalyzer."""
-        try:
-            img = cv2.imdecode(np.fromfile(str(crop_path), dtype=np.uint8), cv2.IMREAD_COLOR)
-        except Exception:
-            img = None
+        img = crop_img
+        if img is None and crop_path is not None:
+            try:
+                img = cv2.imdecode(np.fromfile(str(crop_path), dtype=np.uint8), cv2.IMREAD_COLOR)
+            except Exception:
+                img = None
 
         if img is None:
             return {
