@@ -21,11 +21,13 @@ stages:
   # Giai đoạn 1: Phân đoạn mặt đường & tạo Mask ROI
   01_segment:
     enabled: true
-    method: "adaptive_otsu"            # adaptive_otsu | hsv_road | none
-    roi_crop_top_ratio: 0.15           # Cắt bớt chân trời / cảnh xa nếu có
+    method: "yolo_seg"                 # yolo_seg | adaptive_otsu | hsv_road | none
+    model_path: "weights/pretrained/yolo11m-road-seg.pt"
+    conf_threshold: 0.25
+    roi_crop_top_ratio: 0.10           # Cắt bớt chân trời / cảnh xa nếu có
     roi_crop_bottom_ratio: 0.98
     blur_kernel_size: 5
-    min_road_area_ratio: 0.25
+    min_road_area_ratio: 0.10
 
   # Giai đoạn 2: Nhận diện mô hình YOLO (Cắt mảnh 640x640 có gối đầu)
   02_detect:

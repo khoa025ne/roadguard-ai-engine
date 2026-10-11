@@ -1,5 +1,10 @@
+import sys
 import json
 from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
 WORKSPACE = Path(__file__).resolve().parent.parent
 
@@ -154,7 +159,16 @@ cells = [
             "best_pt = run_dir / 'weights' / 'best.pt'\n",
             "\n",
             "trained_model = YOLO(str(best_pt))\n",
-            "metrics = trained_model.val(data=str(yaml_path), split='test')\n",
+            "# Thiết lập project và name chuẩn xác để loại bỏ hoàn toàn lỗi lồng thư mục runs/detect/runs/detect/\n",
+            "metrics = trained_model.val(\n",
+            "    data=str(yaml_path),\n",
+            "    split='test',\n",
+            "    project='runs/detect',\n",
+            "    name='roadguard_multiclass_v1_eval',\n",
+            "    exist_ok=True,\n",
+            "    plots=True\n",
+            ")\n",
+            "eval_dir = Path(metrics.save_dir)\n",
             "\n",
             "print('=' * 65)\n",
             "print('🏆 KẾT QUẢ ĐÁNH GIÁ CHI TIẾT PER-CLASS AP:')\n",
@@ -174,9 +188,11 @@ cells = [
             "    for cid, cname, cap in low_ap_classes:\n",
             "        print(f'   👉 Lớp {cid} ({cname}): AP={cap:.2f}% < 60% -> Đề xuất bổ sung thêm ảnh thực địa!')\n",
             "\n",
-            "cm_p = run_dir / 'confusion_matrix.png'\n",
+            "cm_p = eval_dir / 'confusion_matrix.png'\n",
             "if cm_p.exists():\n",
-            "    display(Image(str(cm_p)))"
+            "    display(Image(str(cm_p)))\n",
+            "elif (run_dir / 'confusion_matrix.png').exists():\n",
+            "    display(Image(str(run_dir / 'confusion_matrix.png')))"
         ]
     }
 ]

@@ -196,6 +196,60 @@ class TestRoadGuardAIPipeline(unittest.TestCase):
         self.assertEqual(status_resp.status_code, 200)
         self.assertIn(status_resp.json()["status"], ["QUEUED", "RUNNING", "COMPLETED"])
 
+    def test_predictor_multiclass_graceful_fallback(self):
+        """
+        Kiểm tra predictor nạp checkpoint 2-class cũ + class_map 3-class:
+        - get_class_name(2) phải trả về 'bong_troc' (không crash)
+        - get_class_name_vn(2) trả về 'Bong tróc'
+        - get_class_name(99) fallback gracefully 'class_99'
+        """
+        from src.inference.predictor import RoadDefectPredictor
+        model_p = Path(__file__).parent.parent / "weights" / "trained" / "roadguard_best_15k.pt"
+        if model_p.exists():
+            predictor = RoadDefectPredictor(model_path=model_p)
+            # Check model only has 2 classes internally
+            self.assertEqual(len(predictor.model.names), 2)
+            # Check class_map has 3 classes
+            self.assertEqual(predictor.get_class_name(0), "pothole")
+            self.assertEqual(predictor.get_class_name(1), "crack")
+            self.assertEqual(predictor.get_class_name(2), "bong_troc")
+            self.assertEqual(predictor.get_class_name_vn(2), "Bong tróc")
+            # Graceful fallback for non-existent class
+            self.assertEqual(predictor.get_class_name(99), "class_99")
+            self.assertEqual(predictor.get_class_name_vn(99), "class_99")
+
+    def test_stage_01_road_segmentation(self):
+        """
+        Kiểm tra Stage 01 Road Segmentation:
+        - Sinh road_mask nhị phân (H, W)
+        - road_area_ratio nằm trong khoảng [0.0, 1.0]
+        - stage_01_completed = True
+        """
+        import importlib
+        mod_seg = importlib.import_module("src.pipeline.stages.01_segment")
+        dummy_frame = np.ones((480, 640, 3), dtype=np.uint8) * 128
+        ctx = {
+            "config": {
+                "stages": {
+                    "01_segment": {
+                        "enabled": True,
+                        "method": "yolo_seg",
+                        "model_path": "weights/pretrained/yolo11m-road-seg.pt",
+                        "min_road_area_ratio": 0.10
+                    }
+                }
+            },
+            "frames": [{"frame_id": 0, "image": dummy_frame}]
+        }
+        res = mod_seg.run(ctx)
+        self.assertTrue(res.get("stage_01_completed"))
+        mask = res["frames"][0].get("road_mask")
+        self.assertIsNotNone(mask)
+        self.assertEqual(mask.shape, (480, 640))
+        area_ratio = res["frames"][0].get("road_area_ratio")
+        self.assertGreaterEqual(area_ratio, 0.0)
+        self.assertLessEqual(area_ratio, 1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

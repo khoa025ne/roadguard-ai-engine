@@ -50,7 +50,9 @@ outputs/
 wandb/
 
 # Model weights
-weights/trained/
+weights/
+*.pt
+*.pth
 *.onnx
 *.engine
 *.tflite
