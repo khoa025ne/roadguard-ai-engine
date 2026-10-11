@@ -81,3 +81,4 @@ stages:
     save_annotated_frames: true
     save_inspection_json: true
     save_inspection_geojson: true
+    save_inspection_pdf: true

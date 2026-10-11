@@ -191,6 +191,16 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
         with open(geojson_path, "w", encoding="utf-8") as gf:
             json.dump(geojson_data, gf, ensure_ascii=False, indent=2)
 
+    # 5. Xuất Báo Cáo PDF & HTML (Design Tokens Thủy Mệnh)
+    if bool(cfg.get("save_inspection_pdf", True)):
+        try:
+            from src.reporting.pdf_exporter import export_pdf_report
+            pdf_path = output_dir / "inspection_report.pdf"
+            export_pdf_report(final_report, pdf_path)
+            ctx["report_pdf_path"] = str(pdf_path).replace("\\", "/")
+        except Exception as pe:
+            print(f"  [07_report] Cảnh báo không thể xuất file PDF: {pe}")
+
     ctx["final_report"] = final_report
     ctx["output_dir"] = str(output_dir).replace("\\", "/")
     ctx["report_json_path"] = str(report_json_path).replace("\\", "/")
