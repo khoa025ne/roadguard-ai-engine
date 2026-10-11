@@ -358,3 +358,27 @@ Tuần 4: Nghiệm Thu Tích Hợp End-to-End & Active Learning
 
 > 📌 **LỜI NHẮC CUỐI CHO MỌI AI AGENT:**  
 > Luôn kiểm tra [tiến độ.md](file:///f:/train%20AI%20đồ%20án/tiến%20độ.md) trước khi code và cập nhật ngay sau khi xong bất kỳ việc gì!
+
+
+---
+
+## 5. Định Nghĩa & Tiêu Chuẩn Nghiệm Thu MVP Bộ Phận AI (AI MVP Definition)
+
+Để đạt trạng thái **MVP (Minimum Viable Product)** chính thức nghiệm thu đồ án và bàn giao cho Backend ASP.NET Core, bộ phận AI cam kết hoàn thành 4 tiêu chí cốt lõi:
+
+1. **Thẩm định Khung hình Tổng thể (Overview Frame Inspection)**:
+   - Cho phép người dùng hoặc hệ thống lựa chọn 1 hoặc nhiều khung hình tổng thể (Overview Frames) được trích xuất từ video.
+   - KTV GPT-5.4 Vision nhận đồng thời: Ảnh Toàn cảnh có vẽ Bounding Box ROI phát quang neon + Các ảnh Crop chi tiết.
+   - Xuất nhận định văn bản thuần túy tự nhiên: Đánh giá cấp độ hư hại (severity: LOW, MEDIUM, CRITICAL), độ mở vết nứt mm, nguy cơ sụt lún và đề xuất giải pháp xử lý công trình.
+
+2. **Gán Mã Định danh Duy nhất & Khử Trùng lặp (Persistent Defect ID & Deduplication)**:
+   - Một vết nứt xuất hiện qua nhiều frame video liên tiếp (F15, F30, F45) chỉ được cấp duy nhất 1 mã định danh Defect_ID (ví dụ: DEF-001).
+   - Báo cáo tổng hợp không bị trùng lặp số lượng khuyết tật, phản ánh chính xác hiện trạng thực tế tuyến đường.
+
+3. **Cân bằng Nhận thức Vết nứt & Ổ gà**:
+   - Sử dụng mô hình 2-class hoàn chỉnh (0: pothole, 1: crack) kết hợp KTV Vision làm chốt chặn phân loại sâu (fine_tag).
+   - Triệt tiêu hoàn toàn tình trạng chỉ nhận diện vết nứt mà bỏ sót ổ gà.
+
+4. **Vượt qua Bộ Ma trận 35 Test Cases Toàn diện (docs/road_defect_test_cases_matrix.md)**:
+   - Bao phủ: 8 dạng vết nứt, 6 dạng ổ gà, 6 dạng vật thể/người/xe/thùng rác, 5 dạng cây cối/bóng râm, 4 dạng dây điện/bóng dây điện và 6 dạng kết cấu mặt đường bê tông.
+   - Tỷ lệ khử báo động giả trên khe co giãn và bóng dây điện: < 2.0%.

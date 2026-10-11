@@ -11,9 +11,19 @@ import webbrowser
 import threading
 import uvicorn
 
+# Đảm bảo console Windows hỗ trợ in tiếng Việt và emoji UTF-8 không bị lỗi
+try:
+    if sys.stdout:
+        sys.stdout.reconfigure(encoding='utf-8')
+    if sys.stderr:
+        sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    pass
+
 HOST = "127.0.0.1"
 PORT = 8080
 URL = f"http://{HOST}:{PORT}"
+
 
 
 def open_browser():

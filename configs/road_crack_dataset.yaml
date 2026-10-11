@@ -1,0 +1,15 @@
+# configs/road_crack_dataset.yaml
+# Cấu hình Dataset YOLOv11 Vết nứt mặt đường (Road Crack - Roboflow v1)
+# Nguồn: F:\Fake_admin\Downloads\tổng hợp thông tin\Road Crack.v1-dataset.yolov11.zip
+
+# Đường dẫn gốc (cập nhật nếu giải nén vào thư mục khác trên máy tính)
+path: F:/Fake_admin/Downloads/tổng hợp thông tin/Road Crack.v1-dataset.yolov11
+
+train: train/images
+val: valid/images
+test: test/images
+
+# Số lượng lớp và tên lớp
+nc: 1
+names:
+  0: crack

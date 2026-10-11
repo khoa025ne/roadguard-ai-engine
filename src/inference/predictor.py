@@ -4,6 +4,7 @@ src/inference/predictor.py — Module thực thi mô hình YOLOv11 & Trực quan
 Tải trọng số mô hình (weights), suy luận trên ảnh/tile và vẽ kết quả bằng chứng.
 """
 
+import json
 import cv2
 import numpy as np
 from pathlib import Path
@@ -15,37 +16,85 @@ from .tiling_engine import TileSplitter
 class RoadDefectPredictor:
     """Wrapper cho YOLOv11 phát hiện khuyết tật mặt đường."""
 
-    # Màu sắc nhận diện trực quan theo lớp đối tượng
-    CLASS_COLORS = {
-        0: (0, 0, 255),      # pothole       -> Đỏ
-        1: (0, 165, 255),    # longitudinal  -> Cam
-        2: (0, 255, 255),    # transverse    -> Vàng
-        3: (0, 255, 0),      # alligator     -> Xanh lá
-        4: (255, 0, 255),    # edge_crack    -> Tím
-        5: (255, 0, 0),      # block_crack   -> Xanh dương
-        6: (128, 0, 128),    # spalling      -> Tím đậm
-        7: (200, 200, 0),    # raveling      -> Vàng xanh
+    NAME_TO_VN = {
+        "pothole": "Ổ gà",
+        "crack": "Vết nứt",
+        "bong_troc": "Bong tróc",
+        "longitudinal": "Nứt dọc",
+        "transverse": "Nứt ngang",
+        "alligator": "Nứt chân chim",
+        "edge_crack": "Nứt mép",
+        "block_crack": "Nứt ô",
+        "spalling": "Bong tróc BT",
+        "raveling": "Tróc hạt",
     }
 
-    CLASS_NAMES_VN = {
-        0: "Ổ gà",
-        1: "Vết nứt",
-        2: "Nứt ngang",
-        3: "Nứt chân chim",
-        4: "Nứt mép",
-        5: "Nứt ô",
-        6: "Bong tróc BT",
-        7: "Tróc hạt",
-    }
+    # Bảng màu trực quan theo chu kỳ palette
+    PALETTE = [
+        (0, 0, 255),      # Đỏ (pothole - ID 0)
+        (0, 165, 255),    # Cam (crack - ID 1)
+        (255, 0, 255),    # Tím hồng (bong_troc - ID 2)
+        (0, 255, 0),      # Xanh lá
+        (255, 255, 0),    # Vàng
+        (255, 0, 0),      # Xanh dương
+    ]
 
-    def __init__(self, model_path: str | Path, conf_threshold: float = 0.25):
+    @classmethod
+    def load_class_map(cls, custom_path: Optional[str | Path] = None) -> Dict[int, str]:
+        """Tải class_map.json động từ thư mục gốc, hoàn toàn không hardcode class ID."""
+        if custom_path is not None and Path(custom_path).exists():
+            with open(custom_path, "r", encoding="utf-8") as f:
+                return {int(k): str(v) for k, v in json.load(f).items()}
+
+        cur = Path(__file__).resolve().parent
+        candidates = [
+            cur.parent.parent / "class_map.json",
+            Path("class_map.json").resolve(),
+        ]
+        for c in candidates:
+            if c.exists():
+                try:
+                    with open(c, "r", encoding="utf-8") as f:
+                        return {int(k): str(v) for k, v in json.load(f).items()}
+                except Exception as e:
+                    import warnings
+                    warnings.warn(f"[RoadDefectPredictor] Không thể đọc {c}: {e}", UserWarning)
+        import warnings
+        warnings.warn(
+            "[RoadDefectPredictor] CẢNH BÁO: Không tìm thấy file 'class_map.json'! "
+            "Đang sử dụng cấu hình lớp dự phòng mặc định {0: 'pothole', 1: 'crack', 2: 'bong_troc'}. "
+            "Vui lòng tạo hoặc chỉ định class_map.json để tránh sai lệch nhãn mô hình.",
+            UserWarning
+        )
+        return {0: "pothole", 1: "crack", 2: "bong_troc"}
+
+    def __init__(
+        self,
+        model_path: str | Path,
+        conf_threshold: float = 0.25,
+        class_map_path: Optional[str | Path] = None
+    ):
         self.model_path = Path(model_path)
         if not self.model_path.exists():
             raise FileNotFoundError(f"Không tìm thấy file trọng số: {self.model_path}")
 
+        self.class_map = self.load_class_map(class_map_path)
         self.model = YOLO(str(self.model_path))
         self.conf_threshold = conf_threshold
         self.tiler = TileSplitter(tile_size=640, overlap=0.2)
+
+    def get_class_color(self, cls_id: int) -> tuple[int, int, int]:
+        """Lấy mã màu BGR cho class_id từ PALETTE mà không hardcode."""
+        return self.PALETTE[cls_id % len(self.PALETTE)]
+
+    def get_class_name(self, cls_id: int) -> str:
+        """Lấy tên tiếng Anh chuẩn hóa từ class_map.json hoặc model.names."""
+        return self.class_map.get(cls_id, self.model.names.get(cls_id, f"class_{cls_id}"))
+
+    def get_class_name_vn(self, cls_id: int) -> str:
+        """Lấy tên tiếng Việt tương ứng."""
+        eng_name = self.get_class_name(cls_id)
+        return self.NAME_TO_VN.get(eng_name, eng_name)
 
     def predict_tile(self, tile_img: np.ndarray) -> List[Dict[str, Any]]:
         """Inference trên 1 tile 640x640 duy nhất."""
@@ -68,7 +117,7 @@ class RoadDefectPredictor:
             xyxy = boxes.xyxy[i].cpu().numpy().astype(int).tolist()
             conf = float(boxes.conf[i].cpu().numpy())
             cls_id = int(boxes.cls[i].cpu().numpy())
-            cls_name = self.model.names.get(cls_id, str(cls_id))
+            cls_name = self.get_class_name(cls_id)
 
             detections.append({
                 "class_id": cls_id,
@@ -117,8 +166,8 @@ class RoadDefectPredictor:
             x1, y1, x2, y2 = det["box"]
             cls_id = det["class_id"]
             conf = det["confidence"]
-            label_vn = self.CLASS_NAMES_VN.get(cls_id, det["class_name"])
-            color = self.CLASS_COLORS.get(cls_id, (0, 255, 0))
+            label_vn = self.get_class_name_vn(cls_id)
+            color = self.get_class_color(cls_id)
 
             # Vẽ box
             cv2.rectangle(vis, (x1, y1), (x2, y2), color, 2)

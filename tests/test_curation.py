@@ -40,8 +40,8 @@ class TestCurationPipeline(unittest.TestCase):
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir, ignore_errors=True)
 
-    def test_auto_tagger_pothole(self):
-        tagger = AIAutoTagger()
+    def test_auto_tagger_pothole_heuristic(self):
+        tagger = AIAutoTagger(provider="builtin_cv_expert")
         res = tagger.analyze_crop(self.pothole_crop, base_class="pothole", confidence=0.85)
 
         self.assertTrue(res["is_valid"])
@@ -50,14 +50,25 @@ class TestCurationPipeline(unittest.TestCase):
         self.assertIn("Ổ gà", res["fine_tag"])
         self.assertIn(res["severity"], ["MEDIUM", "CRITICAL"])
 
-    def test_auto_tagger_false_alarm(self):
-        tagger = AIAutoTagger()
+    def test_auto_tagger_false_alarm_heuristic(self):
+        tagger = AIAutoTagger(provider="builtin_cv_expert")
         res = tagger.analyze_crop(self.clean_crop, base_class="crack", confidence=0.25)
 
         self.assertFalse(res["is_valid"])
         self.assertEqual(res["status"], "FALSE_ALARM")
         self.assertEqual(res["tag_category"], "hard_negative")
         self.assertEqual(res["yolo_class_id"], -1)
+
+    def test_kdv_inspector_init_and_fallback(self):
+        from src.curation.kdv_inspector import KDVInspector
+        inspector = KDVInspector()
+        self.assertTrue(inspector.is_available)
+        self.assertEqual(inspector.model, "gpt-5.4")
+
+        # Test fallback khi file không tồn tại
+        res = inspector.inspect_crop("non_existent_file.jpg", "crack", 0.9)
+        self.assertFalse(res["is_valid"])
+        self.assertEqual(res["status"], "ERROR")
 
     def test_dataset_exporter(self):
         exporter = DatasetExporter(base_export_dir=self.test_dir / "exports")
