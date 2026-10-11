@@ -60,10 +60,10 @@ stages:
   # Giai đoạn 5: Đo đạc 2D, quy đổi GSD, phân cấp Severity & Tọa độ thực WGS84
   05_measure:
     enabled: true
-    default_altitude_m: 10.0
-    default_gsd_mm_per_px: 5.325       # Chuẩn DJI Mini 2 SE tại độ cao 10m
-    sensor_width_mm: 6.17
-    focal_length_mm: 4.26
+    default_altitude_m: 10.0           # TẠM — chờ thông số camera thật
+    default_gsd_mm_per_px: 5.325       # TẠM — chờ thông số camera thật (Chuẩn DJI Mini 2 SE tại độ cao 10m)
+    sensor_width_mm: 6.17              # TẠM — chờ thông số camera thật
+    focal_length_mm: 4.26              # TẠM — chờ thông số camera thật
     classify_severity: true
     calculate_georeference: true
 

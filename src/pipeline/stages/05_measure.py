@@ -25,9 +25,13 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
         ctx["measured_detections"] = ctx.get("deduped_detections", [])
         return ctx
 
+    # TẠM — chờ thông số camera thật (độ cao bay mặc định khi thiếu telemetry)
     default_alt = float(cfg.get("default_altitude_m", 10.0))
+    # TẠM — chờ thông số camera thật (GSD mặc định 5.325 mm/px tương đương cảm biến 1/2.3" tại H=10m)
     default_gsd = float(cfg.get("default_gsd_mm_per_px", 5.325))
+    # TẠM — chờ thông số camera thật (kích thước cảm biến drone mặc định: 6.17 mm)
     sensor_w = float(cfg.get("sensor_width_mm", 6.17))
+    # TẠM — chờ thông số camera thật (tiêu cự ống kính mặc định: 4.26 mm)
     focal_len = float(cfg.get("focal_length_mm", 4.26))
     do_geo = bool(cfg.get("calculate_georeference", True))
 
@@ -43,11 +47,15 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
         f_info = frames_dict.get(f_idx, {})
         gps_info = f_info.get("gps") or {}
 
-        # 1. Xác định GSD
+        # 1. Xác định GSD (Ground Sampling Distance)
+        # TẠM — chờ thông số camera thật: lấy độ cao từ GPS telemetry hoặc dùng độ cao mặc định
         alt = gps_info.get("rel_alt_m") or gps_info.get("altitude") or default_alt
         gsd = gps_info.get("gsd_mm_per_px")
         if gsd is None or gsd <= 0:
+            # TẠM — chờ thông số camera thật: GSD (mm/px) = (Altitude (m) * 1000 * Sensor_W (mm)) / (Focal_Len (mm) * Image_W (px))
+            # Quy tắc GSD: chi tiết nhỏ nhất đo được ≈ 2 x GSD (muốn đo 3mm cần GSD <= 1.5mm/px)
             gsd = (alt * 1000.0 * sensor_w) / (focal_len * 2720.0) if alt > 0 else default_gsd
+
 
         box = det.get("box", [0, 0, 0, 0])
         class_name = det.get("class_name", "pothole")

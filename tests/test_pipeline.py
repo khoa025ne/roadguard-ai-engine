@@ -44,7 +44,7 @@ class TestRoadGuardAIPipeline(unittest.TestCase):
             self.assertEqual(tile_img.shape[1], 640)
 
     def test_metric_estimator(self):
-        """Kiểm tra quy đổi pixel sang mm và phân cấp severity."""
+        """Kiểm tra quy đổi pixel sang mm và phân cấp severity theo quy chuẩn FHWA."""
         estimator = MetricEstimator()
         box = [100, 100, 400, 500]
         gsd = 1.5  # mm/px
@@ -53,6 +53,35 @@ class TestRoadGuardAIPipeline(unittest.TestCase):
         self.assertTrue(res["is_2d_estimate"])
         self.assertAlmostEqual(res["estimated_width_mm"], 300 * 1.5, delta=1.0)
         self.assertEqual(res["severity"], "CRITICAL")
+        self.assertEqual(res["min_measurable_width_mm"], 3.0)
+
+        # Kiểm tra nứt dọc FHWA: <3mm LOW, 3-13mm MEDIUM, >=13mm HIGH
+        box_crack_low = [0, 0, 2, 100]  # width = 2 * 1.0 = 2.0 mm (<3mm)
+        res_long_low = estimator.estimate_dimensions(box_crack_low, 1.0, "crack_longitudinal")
+        self.assertEqual(res_long_low["severity"], "LOW")
+
+        box_crack_med = [0, 0, 5, 100]  # width = 5 * 1.0 = 5.0 mm (3-13mm)
+        res_long_med = estimator.estimate_dimensions(box_crack_med, 1.0, "crack_longitudinal")
+        self.assertEqual(res_long_med["severity"], "MEDIUM")
+
+        box_crack_high = [0, 0, 15, 100]  # width = 15 * 1.0 = 15.0 mm (>=13mm)
+        res_long_high = estimator.estimate_dimensions(box_crack_high, 1.0, "crack_longitudinal")
+        self.assertEqual(res_long_high["severity"], "HIGH")
+
+        # Kiểm tra nứt ngang FHWA: <3mm LOW, 3-6mm MEDIUM, >=6mm HIGH
+        box_trans_med = [0, 0, 100, 4]  # width = 4 * 1.0 = 4.0 mm (3-6mm)
+        res_trans_med = estimator.estimate_dimensions(box_trans_med, 1.0, "crack_transverse")
+        self.assertEqual(res_trans_med["severity"], "MEDIUM")
+
+        box_trans_high = [0, 0, 100, 8]  # width = 8 * 1.0 = 8.0 mm (>=6mm)
+        res_trans_high = estimator.estimate_dimensions(box_trans_high, 1.0, "crack_transverse")
+        self.assertEqual(res_trans_high["severity"], "HIGH")
+
+        # Quy tắc GSD: chi tiết nhỏ nhất đo được ≈ 2 x GSD
+        # Khi GSD = 2.5 mm/px, min_measurable = 5.0 mm. Với box 3mm -> is_sub_resolution = True
+        res_gsd_limit = estimator.estimate_dimensions([0, 0, 1, 50], 2.5, "crack_longitudinal")
+        self.assertTrue(res_gsd_limit["is_sub_resolution"])
+
 
     def test_mock_ai_adapter(self):
         """Kiểm tra Mock AI Adapter trả về đúng schema AIDetection."""
