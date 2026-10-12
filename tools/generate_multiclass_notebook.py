@@ -1,0 +1,215 @@
+import sys
+import json
+from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
+WORKSPACE = Path(__file__).resolve().parent.parent
+
+cells = [
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "# 🛣️ ROADGUARD AI — HUẤN LUYỆN YOLOV11 MULTI-CLASS (ROADGUARD MULTICLASS V1)\n",
+            "### Mô Hình Đa Lớp: Ổ Gà (0: pothole) | Vết Nứt (1: crack) | Bong Tróc (2: bong_troc)\n",
+            "---\n",
+            "> **Mục tiêu:** Huấn luyện mô hình đa lớp hoàn chỉnh `roadguard_multiclass_v1` bằng cách fine-tune từ trọng số `weights/trained/roadguard_best_15k.pt` trên dataset hợp nhất `merged/` (~21,424 ảnh thực tế đã khử trùng lặp + 6,334 mẫu âm tính chống báo động giả).\n",
+            "> **Taxonomy chuẩn hóa (từ class_map.json):**\n",
+            "> - `0: pothole` (10,111 BBoxes)\n",
+            "> - `1: crack` (21,587 BBoxes)\n",
+            "> - `2: bong_troc` (Đang bổ sung dữ liệu)\n",
+            "> **Lệnh huấn luyện:** `yolo detect train data=merged/data.yaml model=weights/trained/roadguard_best_15k.pt epochs=120 imgsz=640 batch=16 patience=20 name=roadguard_multiclass_v1`\n",
+            "> **Phần cứng khuyến nghị:** Google Colab GPU Tesla T4 (Miễn phí) hoặc GPU RTX cá nhân."
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 📌 Bước 1: Kiểm Tra Trạng Thái GPU & Cài Đặt Ultralytics"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "!nvidia-smi\n",
+            "\n",
+            "import torch\n",
+            "print('=' * 65)\n",
+            "print(f'CUDA Available: {torch.cuda.is_available()}')\n",
+            "if torch.cuda.is_available():\n",
+            "    print(f'GPU: {torch.cuda.get_device_name(0)} | VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB')\n",
+            "else:\n",
+            "    print('⚠️ CẢNH BÁO: Chưa kích hoạt GPU! Vào Runtime -> Change runtime type -> Chọn T4 GPU')\n",
+            "print('=' * 65)\n",
+            "\n",
+            "!pip install -q ultralytics pyyaml matplotlib"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 📥 Bước 2: Nạp Dataset Hợp Nhất & Trọng Số Nền Tảng\n",
+            "---\n",
+            "> Kéo thả file `merged.zip` và `roadguard_best_15k.pt` vào cột Files (📁) bên trái Colab, sau đó bấm chạy ô bên dưới."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "import os, glob, zipfile\n",
+            "from pathlib import Path\n",
+            "\n",
+            "work_dir = Path('/content')\n",
+            "merged_dir = work_dir / 'merged'\n",
+            "merged_dir.mkdir(parents=True, exist_ok=True)\n",
+            "\n",
+            "zip_files = glob.glob('/content/*.zip') + glob.glob('*.zip')\n",
+            "print(f'🔍 Tìm thấy {len(zip_files)} file zip: {zip_files}')\n",
+            "\n",
+            "for z in zip_files:\n",
+            "    if 'merged' in z.lower():\n",
+            "        print(f'🚀 Đang giải nén {z} vào {merged_dir}...')\n",
+            "        with zipfile.ZipFile(z, 'r') as zf:\n",
+            "            zf.extractall(merged_dir)\n",
+            "        break\n",
+            "\n",
+            "yaml_path = merged_dir / 'data.yaml'\n",
+            "if not yaml_path.exists():\n",
+            "    # Tạo data.yaml nếu chưa có\n",
+            "    cfg = {\n",
+            "        'path': str(merged_dir.resolve()),\n",
+            "        'train': 'train/images',\n",
+            "        'val': 'valid/images',\n",
+            "        'test': 'test/images',\n",
+            "        'nc': 3,\n",
+            "        'names': {0: 'pothole', 1: 'crack', 2: 'bong_troc'}\n",
+            "    }\n",
+            "    import yaml\n",
+            "    with open(yaml_path, 'w', encoding='utf-8') as f:\n",
+            "        yaml.dump(cfg, f, default_flow_style=False)\n",
+            "\n",
+            "print('✅ data.yaml đã sẵn sàng tại:', yaml_path)\n",
+            "with open(yaml_path, 'r', encoding='utf-8') as f:\n",
+            "    print(f.read())"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 🚀 Bước 3: Huấn Luyện roadguard_multiclass_v1 (120 Epochs, Early Stopping 20)"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "from ultralytics import YOLO\n",
+            "\n",
+            "base_weight = 'roadguard_best_15k.pt' if Path('roadguard_best_15k.pt').exists() else 'yolo11n.pt'\n",
+            "print(f'🚀 Bắt đầu fine-tune từ mô hình nền tảng: {base_weight}')\n",
+            "\n",
+            "model = YOLO(base_weight)\n",
+            "\n",
+            "results = model.train(\n",
+            "    data=str(yaml_path),\n",
+            "    epochs=120,\n",
+            "    imgsz=640,\n",
+            "    batch=16,\n",
+            "    patience=20,\n",
+            "    name='roadguard_multiclass_v1',\n",
+            "    project='runs/detect',\n",
+            "    save=True,\n",
+            "    save_period=10,\n",
+            "    plots=True,\n",
+            "    device=0 if torch.cuda.is_available() else 'cpu'\n",
+            ")\n",
+            "print('🎉 TIẾN TRÌNH HUẤN LUYỆN 120 EPOCHS ĐÃ HOÀN TẤT!')"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 📊 Bước 4: Đánh Giá Chi Tiết Per-Class AP, Confusion Matrix & Xuất Mô Hình"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "from IPython.display import Image, display\n",
+            "\n",
+            "run_dir = Path('runs/detect/roadguard_multiclass_v1')\n",
+            "best_pt = run_dir / 'weights' / 'best.pt'\n",
+            "\n",
+            "trained_model = YOLO(str(best_pt))\n",
+            "# Thiết lập project và name chuẩn xác để loại bỏ hoàn toàn lỗi lồng thư mục runs/detect/runs/detect/\n",
+            "metrics = trained_model.val(\n",
+            "    data=str(yaml_path),\n",
+            "    split='test',\n",
+            "    project='runs/detect',\n",
+            "    name='roadguard_multiclass_v1_eval',\n",
+            "    exist_ok=True,\n",
+            "    plots=True\n",
+            ")\n",
+            "eval_dir = Path(metrics.save_dir)\n",
+            "\n",
+            "print('=' * 65)\n",
+            "print('🏆 KẾT QUẢ ĐÁNH GIÁ CHI TIẾT PER-CLASS AP:')\n",
+            "low_ap_classes = []\n",
+            "for i, name in trained_model.names.items():\n",
+            "    ap50 = metrics.box.ap50[i] * 100 if i < len(metrics.box.ap50) else 0.0\n",
+            "    ap = metrics.box.ap[i] * 100 if i < len(metrics.box.ap) else 0.0\n",
+            "    print(f' - Lớp {i} ({name:10s}): AP@50 = {ap50:.2f}% | AP@50-95 = {ap:.2f}%')\n",
+            "    if ap50 < 60.0:\n",
+            "        low_ap_classes.append((i, name, ap50))\n",
+            "print(f' - Toàn thể mAP@50   : {metrics.box.map50 * 100:.2f}%')\n",
+            "print(f' - Toàn thể mAP@50-95: {metrics.box.map * 100:.2f}%')\n",
+            "print('=' * 65)\n",
+            "\n",
+            "if low_ap_classes:\n",
+            "    print('⚠️ CÁC LỚP CÓ ĐỘ CHÍNH XÁC AP < 0.6 CẦN BỔ SUNG DỮ LIỆU:')\n",
+            "    for cid, cname, cap in low_ap_classes:\n",
+            "        print(f'   👉 Lớp {cid} ({cname}): AP={cap:.2f}% < 60% -> Đề xuất bổ sung thêm ảnh thực địa!')\n",
+            "\n",
+            "cm_p = eval_dir / 'confusion_matrix.png'\n",
+            "if cm_p.exists():\n",
+            "    display(Image(str(cm_p)))\n",
+            "elif (run_dir / 'confusion_matrix.png').exists():\n",
+            "    display(Image(str(run_dir / 'confusion_matrix.png')))"
+        ]
+    }
+]
+
+nb_data = {
+    "cells": cells,
+    "metadata": {
+        "accelerator": "GPU",
+        "colab": {"gpuType": "T4", "provenance": []},
+        "language_info": {"name": "python"}
+    },
+    "nbformat": 4,
+    "nbformat_minor": 2
+}
+
+out_p = WORKSPACE / "notebooks" / "train_roadguard_multiclass_v1_colab.ipynb"
+with open(out_p, "w", encoding="utf-8") as f:
+    json.dump(nb_data, f, ensure_ascii=False, indent=2)
+
+print("SUCCESS: Notebook created at", str(out_p))

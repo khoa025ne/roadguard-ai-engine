@@ -1,0 +1,162 @@
+/**
+ * layout.css — Bố Cục Không Gian 2 Cột Chuẩn Công Nghiệp (Thủy Mệnh)
+ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-content);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* HEADER HỆ THỐNG */
+.app-header {
+  background-color: var(--bg-dark);
+  color: var(--text-inverse);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(213, 222, 232, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  background-color: var(--primary);
+  border-radius: var(--radius-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.brand-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: #FFFFFF;
+  font-family: var(--font-content);
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  color: var(--metallic);
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.header-status-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* KHÔNG GIAN LÀM VIỆC CHÍNH */
+.main-wrapper {
+  max-width: 1720px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px 24px;
+  flex: 1;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 390px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* CỘT ĐIỀU KHIỂN & CẤU HÌNH (LEFT) */
+.control-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* CỘT KHÔNG GIAN KẾT QUẢ & THẨM ĐỊNH (RIGHT) */
+.results-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0; /* Ngăn tràn flex container */
+}
+
+/* THẺ NỘI DUNG (CARD) THỦY MỆNH */
+.rg-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-none);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rg-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--bg-subtle);
+  padding-bottom: 12px;
+}
+
+.rg-card-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rg-card-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* FOOTER THỦY MỆNH */
+.app-footer {
+  margin-top: auto;
+  padding: 16px 24px;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-ui);
+}
+
+/* RESPONSIVE LAYOUT */
+@media (max-width: 1180px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}

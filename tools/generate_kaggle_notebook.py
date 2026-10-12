@@ -1,0 +1,311 @@
+"""
+tools/generate_kaggle_notebook.py — Sinh Notebook Huấn Luyện Chuẩn Kaggle
+========================================================================
+Tạo notebook notebooks/train_roadguard_multiclass_v1_kaggle.ipynb đáp ứng 100%
+tiêu chuẩn môi trường Kaggle (GPU T4 x2, Internet: ON):
+- Sử dụng /kaggle/working và /kaggle/input (tuyệt đối không dùng /content, Drive)
+- Thứ tự chuẩn: (a) Sao chép/mount dataset; (b) Smoke test 5 epochs -> Train full 120 epochs;
+  (c) Đánh giá chi tiết Per-Class AP (ngưỡng 0.6) + ma trận nhầm lẫn confusion matrix.
+"""
+
+import sys
+import json
+from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
+WORKSPACE = Path(__file__).resolve().parent.parent
+
+cells = [
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "# 🛣️ ROADGUARD AI — HUẤN LUYỆN YOLOV11 MULTI-CLASS TRÊN KAGGLE\n",
+            "### Mô Hình Đa Lớp: Ổ Gà (0: pothole) | Vết Nứt (1: crack) | Bong Tróc (2: bong_troc)\n",
+            "---\n",
+            "### ⚙️ Hướng dẫn thiết lập Kaggle Notebook trước khi bấm Run:\n",
+            "1. **Accelerator:** Chọn **GPU T4 x2** (hoặc GPU P100) ở thanh bên phải (Settings -> Accelerator).\n",
+            "2. **Internet:** Bật **Internet ON** để tải thư viện `ultralytics`.\n",
+            "3. **Dataset Input:** Đảm bảo đã gắn (Add Input) Dataset chứa dữ liệu hợp nhất `roadguard-multiclass-dataset`.\n",
+            "4. **Môi trường làm việc:** Sử dụng `/kaggle/working` cho mọi tiến trình ghi file (vì `/kaggle/input` ở chế độ chỉ đọc)."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# 1. Cài đặt Ultralytics và kiểm tra thiết bị phần cứng GPU\n",
+            "!pip install -q --upgrade ultralytics\n",
+            "\n",
+            "import os\n",
+            "import sys\n",
+            "import shutil\n",
+            "import torch\n",
+            "import yaml\n",
+            "from pathlib import Path\n",
+            "\n",
+            "print('=' * 65)\n",
+            "print('🚀 KIỂM TRA PHẦN CỨNG GPU TRÊN KAGGLE:')\n",
+            "if torch.cuda.is_available():\n",
+            "    device_count = torch.cuda.device_count()\n",
+            "    print(f'✓ Phát hiện {device_count} GPU khả dụng:')\n",
+            "    for i in range(device_count):\n",
+            "        print(f'   - GPU [{i}]: {torch.cuda.get_device_name(i)}')\n",
+            "else:\n",
+            "    print('⚠️ CẢNH BÁO: Không phát hiện GPU! Vui lòng bật GPU T4 x2 trong Settings.')\n",
+            "print('=' * 65)"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# 2. Tự động định vị Dataset từ /kaggle/input và sao chép sang /kaggle/working/data\n",
+            "input_base = Path('/kaggle/input')\n",
+            "working_base = Path('/kaggle/working')\n",
+            "target_data_dir = working_base / 'data'\n",
+            "\n",
+            "# Tìm thư mục chứa dataset trong /kaggle/input\n",
+            "matched_dataset_dir = None\n",
+            "matched_weight_path = None\n",
+            "\n",
+            "for p in input_base.rglob('*'):\n",
+            "    if p.name == 'data.yaml' and not matched_dataset_dir:\n",
+            "        matched_dataset_dir = p.parent\n",
+            "    if p.name in ['roadguard_best_15k.pt', 'best.pt'] and not matched_weight_path:\n",
+            "        matched_weight_path = p\n",
+            "\n",
+            "if not matched_dataset_dir:\n",
+            "    raise FileNotFoundError(\n",
+            "        '❌ Không tìm thấy data.yaml trong /kaggle/input! '\n",
+            "        'Vui lòng bấm \"+ Add Input\" ở góc trên bên phải để thêm Dataset vào Notebook.'\n",
+            "    )\n",
+            "\n",
+            "print(f'✓ Tìm thấy Dataset nguồn tại: {matched_dataset_dir}')\n",
+            "if matched_weight_path:\n",
+            "    print(f'✓ Tìm thấy Trọng số nền tảng tại: {matched_weight_path}')\n",
+            "else:\n",
+            "    print('ℹ️ Không thấy file roadguard_best_15k.pt, sẽ sử dụng yolo11n.pt làm trọng số khởi đầu.')\n",
+            "\n",
+            "# Sao chép sang /kaggle/working/data để có toàn quyền ghi file và tạo labels.cache\n",
+            "if target_data_dir.exists():\n",
+            "    shutil.rmtree(target_data_dir)\n",
+            "target_data_dir.mkdir(parents=True, exist_ok=True)\n",
+            "\n",
+            "print('📦 Đang sao chép dataset sang /kaggle/working/data/ (vui lòng chờ)...')\n",
+            "for item in ['train', 'valid', 'test']:\n",
+            "    src_sub = matched_dataset_dir / item\n",
+            "    if src_sub.exists():\n",
+            "        shutil.copytree(src_sub, target_data_dir / item)\n",
+            "        print(f'   ✓ Đã sao chép phân tập {item}: {len(list((target_data_dir / item / \"images\").glob(\"*.*\")))} ảnh')\n",
+            "\n",
+            "# Cập nhật data.yaml với đường dẫn tuyệt đối chuẩn /kaggle/working/data\n",
+            "with open(matched_dataset_dir / 'data.yaml', 'r', encoding='utf-8') as f:\n",
+            "    yaml_cfg = yaml.safe_load(f)\n",
+            "\n",
+            "yaml_cfg['path'] = str(target_data_dir.resolve())\n",
+            "yaml_cfg['train'] = 'train/images'\n",
+            "yaml_cfg['val'] = 'valid/images'\n",
+            "yaml_cfg['test'] = 'test/images'\n",
+            "yaml_cfg['nc'] = 3\n",
+            "yaml_cfg['names'] = {0: 'pothole', 1: 'crack', 2: 'bong_troc'}\n",
+            "\n",
+            "working_yaml = target_data_dir / 'data.yaml'\n",
+            "with open(working_yaml, 'w', encoding='utf-8') as f:\n",
+            "    yaml.dump(yaml_cfg, f, default_flow_style=False, sort_keys=False)\n",
+            "\n",
+            "# Sao chép trọng số nền tảng\n",
+            "local_weight = working_base / 'roadguard_best_15k.pt'\n",
+            "if matched_weight_path and matched_weight_path.exists():\n",
+            "    shutil.copy2(matched_weight_path, local_weight)\n",
+            "else:\n",
+            "    local_weight = 'yolo11n.pt'\n",
+            "\n",
+            "print(f'📄 File cấu hình huấn luyện đã sẵn sàng: {working_yaml}')\n",
+            "print(f'🎯 File trọng số ban đầu: {local_weight}')"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 🧪 Bước 2a: Smoke Test (5 Epochs)\n",
+            "> Chạy kiểm thử nhanh 5 epochs để xác nhận đường truyền dữ liệu (data loader), nạp nhãn đa lớp và tài nguyên GPU hoạt động trơn tru không phát sinh lỗi."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "from ultralytics import YOLO\n",
+            "\n",
+            "print('=' * 65)\n",
+            "print('🚀 TIẾN HÀNH SMOKE TEST (5 EPOCHS)...')\n",
+            "print('=' * 65)\n",
+            "\n",
+            "smoke_model = YOLO(str(local_weight))\n",
+            "smoke_results = smoke_model.train(\n",
+            "    data=str(working_yaml),\n",
+            "    epochs=5,\n",
+            "    imgsz=640,\n",
+            "    batch=16,\n",
+            "    project='/kaggle/working/runs/detect',\n",
+            "    name='smoke_test',\n",
+            "    exist_ok=True,\n",
+            "    plots=True,\n",
+            "    device=0 if torch.cuda.is_available() else 'cpu'\n",
+            ")\n",
+            "print('🎉 SMOKE TEST 5 EPOCHS THÀNH CÔNG! SẴN SÀNG HUẤN LUYỆN TOÀN DIỆN 120 EPOCHS.')"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 🏋️ Bước 2b: Huấn Luyện Toàn Diện (Full Training 120 Epochs)\n",
+            "> Huấn luyện toàn diện 120 epochs với `patience=20`, `batch=16`, `imgsz=640`, lưu checkpoint tốt nhất tại `/kaggle/working/runs/detect/roadguard_multiclass_v1/weights/best.pt`."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "print('=' * 65)\n",
+            "print('🚀 BẮT ĐẦU HUẤN LUYỆN FULL ROADGUARD MULTICLASS V1 (120 EPOCHS)...')\n",
+            "print('=' * 65)\n",
+            "\n",
+            "# Khởi tạo lại từ trọng số nền tảng tốt nhất ban đầu\n",
+            "full_model = YOLO(str(local_weight))\n",
+            "\n",
+            "full_results = full_model.train(\n",
+            "    data=str(working_yaml),\n",
+            "    epochs=120,\n",
+            "    patience=20,\n",
+            "    batch=16,\n",
+            "    imgsz=640,\n",
+            "    name='roadguard_multiclass_v1',\n",
+            "    project='/kaggle/working/runs/detect',\n",
+            "    exist_ok=True,\n",
+            "    save=True,\n",
+            "    save_period=10,\n",
+            "    plots=True,\n",
+            "    device=0 if torch.cuda.is_available() else 'cpu'\n",
+            ")\n",
+            "print('🎉 HUẤN LUYỆN TOÀN DIỆN 120 EPOCHS ĐÃ HOÀN TẤT THÀNH CÔNG!')"
+        ]
+    },
+    {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 📊 Bước 2c: Đánh Giá Chi Tiết Per-Class AP, Confusion Matrix & Nghiệm Thu (Ngưỡng AP $\\ge$ 0.6)\n",
+            "> Đánh giá mô hình tốt nhất trên tập Test độc lập, kiểm tra ngưỡng đạt chuẩn cho từng lớp và hiển thị ma trận nhầm lẫn."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "from IPython.display import Image, display\n",
+            "\n",
+            "run_dir = Path('/kaggle/working/runs/detect/roadguard_multiclass_v1')\n",
+            "best_pt = run_dir / 'weights' / 'best.pt'\n",
+            "\n",
+            "if not best_pt.exists():\n",
+            "    # Fallback nếu dùng tên khác\n",
+            "    best_pt = list(Path('/kaggle/working/runs/detect').rglob('best.pt'))[0]\n",
+            "\n",
+            "print(f'🏆 Nạp trọng số tốt nhất để đánh giá: {best_pt}')\n",
+            "trained_model = YOLO(str(best_pt))\n",
+            "\n",
+            "# Chạy validation trên tập Test, thiết lập project/name tường minh không gây lồng thư mục\n",
+            "metrics = trained_model.val(\n",
+            "    data=str(working_yaml),\n",
+            "    split='test',\n",
+            "    project='/kaggle/working/runs/detect',\n",
+            "    name='roadguard_multiclass_v1_eval',\n",
+            "    exist_ok=True,\n",
+            "    plots=True\n",
+            ")\n",
+            "eval_dir = Path(metrics.save_dir)\n",
+            "\n",
+            "print('=' * 75)\n",
+            "print('📋 BẢNG ĐÁNH GIÁ CHI TIẾT TỪNG LỚP KHUYẾT TẬT (PER-CLASS AP METRICS):')\n",
+            "print('=' * 75)\n",
+            "\n",
+            "passed_classes = []\n",
+            "failed_classes = []\n",
+            "\n",
+            "for i, name in trained_model.names.items():\n",
+            "    ap50 = metrics.box.ap50[i] * 100 if i < len(metrics.box.ap50) else 0.0\n",
+            "    ap50_95 = metrics.box.ap[i] * 100 if i < len(metrics.box.ap) else 0.0\n",
+            "    status = '✅ ĐẠT CHUẨN' if ap50 >= 60.0 else '⚠️ DƯỚI NGƯỠNG'\n",
+            "    print(f' - Lớp [{i}] {name:12s} | AP@50 = {ap50:6.2f}% | AP@50-95 = {ap50_95:6.2f}% | Trạng thái: {status}')\n",
+            "    if ap50 >= 60.0:\n",
+            "        passed_classes.append((i, name, ap50))\n",
+            "    else:\n",
+            "        failed_classes.append((i, name, ap50))\n",
+            "\n",
+            "print('-' * 75)\n",
+            "print(f'🎯 ĐỘ CHÍNH XÁC TOÀN DIỆN: mAP@50 = {metrics.box.map50 * 100:.2f}% | mAP@50-95 = {metrics.box.map * 100:.2f}%')\n",
+            "print('=' * 75)\n",
+            "\n",
+            "if failed_classes:\n",
+            "    print('⚠️ DANH SÁCH CÁC LỚP CÓ ĐỘ CHÍNH XÁC AP < 0.6 CẦN BỔ SUNG DỮ LIỆU THỰC ĐỊA:')\n",
+            "    for cid, cname, cap in failed_classes:\n",
+            "        print(f'   👉 Lớp [{cid}] {cname}: AP@50 = {cap:.2f}% (< 60.0%) -> Kế hoạch: Bổ sung mẫu từ Flycam qua KDV Inspector.')\n",
+            "\n",
+            "# Hiển thị ma trận nhầm lẫn Confusion Matrix\n",
+            "print('\\n🖼️ MA TRẬN NHẦM LẪN (CONFUSION MATRIX):')\n",
+            "cm_file = eval_dir / 'confusion_matrix.png'\n",
+            "if cm_file.exists():\n",
+            "    display(Image(str(cm_file)))\n",
+            "elif (run_dir / 'confusion_matrix.png').exists():\n",
+            "    display(Image(str(run_dir / 'confusion_matrix.png')))\n",
+            "\n",
+            "# Xuất file trọng số ra thư mục gốc /kaggle/working để người dùng tải về dễ dàng\n",
+            "export_weight = working_base / 'roadguard_multiclass_v1_best.pt'\n",
+            "shutil.copy2(best_pt, export_weight)\n",
+            "print(f'\\n💾 Đã xuất file trọng số hoàn chỉnh tại: {export_weight}')\n",
+            "print('👉 Bạn có thể tải file này trực tiếp từ tab Output bên phải màn hình Kaggle!')"
+        ]
+    }
+]
+
+nb_data = {
+    "cells": cells,
+    "metadata": {
+        "accelerator": "GPU",
+        "colab": {"gpuType": "T4"},
+        "kaggle": {
+            "accelerator": "nvidiaTeslaT4",
+            "dataSources": [],
+            "dockerImageVersionId": 30698,
+            "isGpuEnabled": True,
+            "isInternetEnabled": True,
+            "language": "python"
+        },
+        "language_info": {"name": "python"}
+    },
+    "nbformat": 4,
+    "nbformat_minor": 2
+}
+
+out_p = WORKSPACE / "notebooks" / "train_roadguard_multiclass_v1_kaggle.ipynb"
+with open(out_p, "w", encoding="utf-8") as f:
+    json.dump(nb_data, f, ensure_ascii=False, indent=2)
+
+print("SUCCESS: Kaggle Notebook created at", str(out_p))

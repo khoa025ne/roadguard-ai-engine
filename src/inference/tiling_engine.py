@@ -108,3 +108,83 @@ class TileSplitter:
                 merged.append(meta_copy)
 
         return merged
+
+
+class TargetBandClassifier:
+    """
+    Phân loại TargetBand tuân thủ quy tắc bất biến của Domain Model v1 (dòng 132):
+    'TargetBand in {Surface, LeftEdge, RightEdge}; trái/phải nhìn theo chiều tăng lý trình, không đổi khi bay ngược.'
+    """
+
+    @staticmethod
+    def calculate_azimuth_deg(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """Tính góc phương vị (Azimuth) giữa 2 tọa độ GPS (0 - 360 độ)."""
+        import math
+        lat1_rad = math.radians(lat1)
+        lat2_rad = math.radians(lat2)
+        dlon_rad = math.radians(lon2 - lon1)
+
+        y = math.sin(dlon_rad) * math.cos(lat2_rad)
+        x = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(dlon_rad)
+        azimuth_deg = (math.degrees(math.atan2(y, x)) + 360) % 360
+        return azimuth_deg
+
+    @staticmethod
+    def is_forward_flight(flight_heading_deg: float, road_azimuth_deg: float) -> bool:
+        """
+        Kiểm tra drone bay xuôi chiều hay ngược chiều lý trình.
+        Góc chênh lệch <= 90 độ -> Bay xuôi (True).
+        Góc chênh lệch > 90 độ -> Bay ngược (False).
+        """
+        diff = abs(flight_heading_deg - road_azimuth_deg) % 360
+        if diff > 180:
+            diff = 360 - diff
+        return diff <= 90.0
+
+    @classmethod
+    def classify(
+        cls,
+        box_xyxy: List[float],
+        frame_width: int = 2720,
+        is_forward: bool = True,
+        left_ratio: float = 0.15,
+        right_ratio: float = 0.85
+    ) -> str:
+        """
+        Phân loại detection thuộc SURFACE, LEFT_EDGE hay RIGHT_EDGE.
+        - box_xyxy: [x1, y1, x2, y2]
+        - is_forward: True nếu bay xuôi chiều lý trình, False nếu bay ngược chiều lý trình.
+        """
+        x_center = (box_xyxy[0] + box_xyxy[2]) / 2.0
+        ratio = x_center / float(frame_width)
+
+        if ratio < left_ratio:
+            cam_side = "CAM_LEFT"
+        elif ratio > right_ratio:
+            cam_side = "CAM_RIGHT"
+        else:
+            return "SURFACE"
+
+        # Quy tắc Domain Model: Trái/phải nhìn theo chiều tăng lý trình, không đổi khi bay ngược
+        if is_forward:
+            return "LEFT_EDGE" if cam_side == "CAM_LEFT" else "RIGHT_EDGE"
+        else:
+            # Khi bay ngược: Mép trái của camera là mép phải của con đường theo chiều lý trình
+            return "RIGHT_EDGE" if cam_side == "CAM_LEFT" else "LEFT_EDGE"
+
+
+class ContextOverlapHandler:
+    """Xử lý dải đệm biên giữa các ProcessingBlock/Segment (10-20% overlap)."""
+
+    @staticmethod
+    def is_overlap_detection(
+        projected_station_m: float,
+        start_station_m: float,
+        end_station_m: float
+    ) -> bool:
+        """
+        Trả về True nếu detection nằm ngoài phạm vi chính [start_station_m, end_station_m],
+        tức nằm trong dải đệm biên (Context Overlap).
+        """
+        return (projected_station_m < start_station_m) or (projected_station_m > end_station_m)
+

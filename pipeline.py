@@ -1,181 +1,102 @@
 """
-pipeline.py — Master End-to-End Runner cho Hệ Thống RoadGuard AI
-================================================================
-Kết nối toàn bộ 4 tầng xử lý:
-  Video + SRT -> Ingestion -> Tiling 640x640 -> AI Inference -> 2D Metric -> Tracking -> Báo cáo JSON & GeoJSON
+pipeline.py — Master CLI Runner cho Hệ Thống RoadGuard AI (Kiến Trúc A)
+=======================================================================
+Kết nối toàn bộ 7 giai đoạn tuyến tính:
+  01_segment -> 02_detect -> 03_filter -> 04_dedup -> 05_measure -> 06_inspect -> 07_report
 
 CÁCH SỬ DỤNG:
-  # Chạy phân tích video flycam:
-  python pipeline.py --video flight.mp4 --srt flight.srt --model weights/base/best.pt --output results/
+  # 1. Phân tích video flycam với mô hình 15k:
+  python pipeline.py --video data/raw_videos/DJI_0057.MP4 --model weights/trained/roadguard_best_15k.pt --output outputs/reports/run1
 
-  # Chạy test giả lập (Mock mode cho Backend test sớm):
-  python pipeline.py --mock --output results/
+  # 2. Phân tích video kèm file phụ đề viễn thám SRT:
+  python pipeline.py --video flight.mp4 --srt flight.srt --output outputs/reports/flight_run
+
+  # 3. Chạy chế độ giả lập (Mock mode cho Backend ASP.NET Core test nhanh):
+  python pipeline.py --mock --output outputs/reports/mock_run
 """
 
 import sys
-import time
 import json
 import argparse
 from pathlib import Path
 
-# Thêm thư mục gốc vào path để import src
-sys.path.append(str(Path(__file__).parent))
+# Thêm root vào path
+sys.path.append(str(Path(__file__).resolve().parent))
 
-from src.ingestion.srt_parser import DJISRTParser
-from src.ingestion.video_extractor import VideoFrameExtractor
-from src.inference.predictor import RoadDefectPredictor
-from src.measurement.metric_estimator import MetricEstimator
-from src.measurement.spatial_tracker import SpatialTracker
-from src.contracts.aidetection_schema import AIDetectionPayloadFormatter
+from src.pipeline.pipeline import run_video_analysis_task, LinearPipeline, load_pipeline_config
 from src.contracts.mock_ai_adapter import MockAIAdapter
 
 
-def run_pipeline(
-    video_path: str = None,
-    srt_path: str = None,
-    model_path: str = "weights/base/best.pt",
-    output_dir: str = "results",
-    conf_threshold: float = 0.25,
-    is_mock: bool = False
-):
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-    start_time = time.time()
+def main():
+    parser = argparse.ArgumentParser(description="RoadGuard AI — Linear Pipeline Runner (Kiến Trúc A)")
+    parser.add_argument("--video", type=str, default="", help="Đường dẫn file video (.mp4)")
+    parser.add_argument("--srt", type=str, default="", help="Đường dẫn file phụ đề telemetry (.srt)")
+    parser.add_argument("--model", type=str, default="weights/trained/roadguard_best_15k.pt", help="Đường dẫn file trọng số model (.pt)")
+    parser.add_argument("--output", type=str, default="outputs/reports", help="Thư mục xuất báo cáo")
+    parser.add_argument("--conf", type=float, default=0.25, help="Ngưỡng confidence nhận diện")
+    parser.add_argument("--fps", type=int, default=2, help="Tần suất trích xuất khung hình (FPS)")
+    parser.add_argument("--duration", type=int, default=30, help="Số giây tối đa cần phân tích (0 = toàn bộ)")
+    parser.add_argument("--no-tiling", action="store_true", help="Không dùng tiling 640x640")
+    parser.add_argument("--config", type=str, default="configs/pipeline.yaml", help="Đường dẫn file config pipeline")
+    parser.add_argument("--mock", action="store_true", help="Chạy chế độ mock cho kiểm thử Backend")
+    args = parser.parse_args()
+
+    out_dir = Path(args.output)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     print("=" * 70)
-    print("🚀 ROADGUARD AI ANALYSIS PIPELINE — KHỞI ĐỘNG")
+    print("🚀 ROADGUARD AI — KIẾN TRÚC A (LINEAR PIPELINE 7 STAGES)")
     print("=" * 70)
 
-    # ─── NẾU CHẠY CHẾ ĐỘ MOCK (Cho Backend ASP.NET Core kiểm thử) ───────────────
-    if is_mock:
+    # Chế độ Mock Adapter
+    if args.mock:
         print("ℹ️ Chế độ Mock Adapter: Đang sinh dữ liệu giả lập cho Backend...")
         adapter = MockAIAdapter()
         res = adapter.process_mock_job(processing_job_id="job-mock-test-001")
-        out_file = output_path / "inspection_report.json"
+        out_file = out_dir / "inspection_report.json"
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump(res, f, indent=2, ensure_ascii=False)
         print(f"✅ Đã tạo kết quả mock tại: {out_file}")
         print("=" * 70)
-        return res
+        return
 
-    if not video_path:
-        raise ValueError("Vui lòng chỉ định đường dẫn video bằng --video <file.mp4> hoặc dùng cờ --mock")
+    if not args.video:
+        print("❌ Vui lòng chỉ định đường dẫn video bằng cờ --video <path.mp4> hoặc --mock.")
+        print("Ví dụ: python pipeline.py --video data/raw_videos/DJI_0057.MP4")
+        sys.exit(1)
 
-    video_path = Path(video_path)
-    if not video_path.exists():
-        raise FileNotFoundError(f"Không tìm thấy file video: {video_path}")
+    print(f"📹 Video đầu vào: {args.video}")
+    if args.srt:
+        print(f"🛰️ Telemetry SRT: {args.srt}")
+    print(f"🧠 Trọng số AI  : {args.model}")
+    print(f"📁 Thư mục xuất : {args.output}")
+    print("-" * 70)
 
-    # ─── TẦNG 1: PARSE SRT & BÓC TÁCH KHUNG HÌNH ───────────────────────────────
-    print("\n[TẦNG 1] Bóc tách viễn thám & Trích xuất khung hình...")
-    telemetries = []
-    if srt_path and Path(srt_path).exists():
-        srt_parser = DJISRTParser()
-        telemetries = srt_parser.parse_file(srt_path)
-        print(f"   Đã đọc {len(telemetries)} mốc telemetry từ file SRT.")
-    else:
-        print("   ⚠️ Không có file SRT, sẽ sử dụng thông số độ cao mặc định 10m.")
-
-    extractor = VideoFrameExtractor()
-    frames_dir = output_path / "extracted_frames"
-    frame_metas = extractor.extract_frames(video_path, frames_dir, telemetries)
-    print(f"   Trích xuất thành công {len(frame_metas)} frames đạt chuẩn.")
-
-    # ─── TẦNG 2 & 3: TILING & MÔ HÌNH NHẬN DIỆN AI ─────────────────────────────
-    print(f"\n[TẦNG 2 & 3] Khởi chạy mô hình YOLO ({model_path})...")
-    predictor = RoadDefectPredictor(model_path, conf_threshold=conf_threshold)
-    estimator = MetricEstimator()
-    tracker = SpatialTracker(max_distance_meters=2.0)
-
-    all_raw_detections = []
-    vis_dir = output_path / "visualized_frames"
-    vis_dir.mkdir(parents=True, exist_ok=True)
-
-    import cv2
-    for meta in frame_metas:
-        f_idx = meta["frame_index"]
-        f_img_path = frames_dir / meta["filename"]
-        img = cv2.imread(str(f_img_path))
-        if img is None:
-            continue
-
-        # Cắt mảnh 640x640 và inference
-        detections = predictor.predict_full_frame(img, use_tiling=True)
-
-        # Lấy GSD của frame
-        gps = meta.get("gps")
-        gsd = gps["gsd_mm_per_px"] if gps and "gsd_mm_per_px" in gps else 1.43
-
-        # ─── TẦNG 4: ĐO ĐẠC KÍCH THƯỚC VẬT LÝ & THEO DÕI ────────────────────────
-        for det in detections:
-            metrics = estimator.estimate_dimensions(det["box"], gsd, det.get("class_name", "pothole"))
-            det.update(metrics)
-            det["frame_index"] = f_idx
-            det["defect_type_code"] = det.get("class_name", "pothole")
-
-        # Cập nhật tracking
-        tracked_dets = tracker.update(detections, meta)
-        all_raw_detections.extend(tracked_dets)
-
-        # Vẽ ảnh trực quan
-        vis_path = vis_dir / f"vis_{meta['filename']}"
-        predictor.visualize(img, tracked_dets, vis_path)
-
-    # ─── TẦNG 5: ĐÓNG GÓI JSON BẤT BIẾN & GEOJSON ─────────────────────────────
-    print("\n[TẦNG 5] Đóng gói báo cáo chuẩn AIDetection...")
-    formatted_detections = []
-    job_id = f"job-{int(time.time())}"
-
-    for det in all_raw_detections:
-        rec = AIDetectionPayloadFormatter.create_detection_record(
-            processing_job_id=job_id,
-            model_version_id=str(Path(model_path).name),
-            defect_type_code=det.get("defect_type_code", "pothole"),
-            confidence=det["confidence"],
-            estimated_width_mm=det.get("estimated_width_mm", 0.0),
-            estimated_length_m=det.get("estimated_length_m", 0.0),
-            raw_box=det["box"],
-            location_method="OBSERVED_FOOTPRINT"
+    try:
+        report = run_video_analysis_task(
+            video_path=args.video,
+            model_path=args.model,
+            output_dir=args.output,
+            srt_path=args.srt if args.srt else None,
+            conf_threshold=args.conf,
+            max_duration_seconds=args.duration,
+            sampling_rate_fps=args.fps,
+            use_tiling=not args.no_tiling,
+            config_path=args.config
         )
-        formatted_detections.append(rec)
-
-    duration = time.time() - start_time
-    final_report = AIDetectionPayloadFormatter.format_job_response(
-        processing_job_id=job_id,
-        model_version_id=str(Path(model_path).name),
-        detections=formatted_detections,
-        execution_time_seconds=duration,
-        status="COMPLETED"
-    )
-
-    report_file = output_path / "inspection_report.json"
-    with open(report_file, "w", encoding="utf-8") as f:
-        json.dump(final_report, f, indent=2, ensure_ascii=False)
-
-    print("=" * 70)
-    print("🎉 HOÀN TẤT TOÀN BỘ PIPELINE PHÂN TÍCH!")
-    print(f"⏱️ Tổng thời gian thực thi: {duration:.2f} giây")
-    print(f"📊 Phát hiện              : {len(formatted_detections)} khuyết tật")
-    print(f"📁 Báo cáo JSON           : {report_file}")
-    print(f"🖼️ Ảnh trực quan          : {vis_dir}")
-    print("=" * 70)
-    return final_report
+        print("=" * 70)
+        print("✅ HOÀN TẤT PHÂN TÍCH!")
+        summary = report.get("summary", {})
+        print(f"🎯 Tổng khuyết tật: {summary.get('total_detections', 0)}")
+        print(f"   - Ổ gà (pothole): {summary.get('pothole_count', 0)}")
+        print(f"   - Vết nứt (crack): {summary.get('crack_count', 0)}")
+        print(f"   - Khẩn cấp (critical): {summary.get('critical_count', 0)}")
+        print(f"📄 Báo cáo JSON: {out_dir / 'inspection_report.json'}")
+        print("=" * 70)
+    except Exception as e:
+        print(f"❌ Xảy ra lỗi khi chạy pipeline: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="RoadGuard AI Pipeline")
-    parser.add_argument("--video", type=str, default="", help="Đường dẫn file video .MP4")
-    parser.add_argument("--srt", type=str, default="", help="Đường dẫn file telemetry .SRT")
-    parser.add_argument("--model", type=str, default="weights/base/best.pt", help="Đường dẫn file model .pt")
-    parser.add_argument("--output", type=str, default="results", help="Thư mục xuất kết quả")
-    parser.add_argument("--conf", type=float, default=0.25, help="Ngưỡng confidence")
-    parser.add_argument("--mock", action="store_true", help="Chạy chế độ giả lập Mock AI")
-    args = parser.parse_args()
-
-    run_pipeline(
-        video_path=args.video,
-        srt_path=args.srt,
-        model_path=args.model,
-        output_dir=args.output,
-        conf_threshold=args.conf,
-        is_mock=args.mock
-    )
+    main()

@@ -1,0 +1,84 @@
+# ==============================================================================
+# RoadGuard AI — Pipeline Tuyến Tính Kiến Trúc A (Linear Pipeline Configuration)
+# ==============================================================================
+
+pipeline:
+  name: "RoadGuard Linear Pipeline v2.0"
+  description: "Pipeline 7 giai đoạn tuyến tính xử lý video/hình ảnh khuyết tật mặt đường"
+  version: "2.0.0"
+
+# Cấu hình đường dẫn chung & Taxonomy
+general:
+  class_map_path: "class_map.json"
+  default_weights: "weights/trained/roadguard_best_15k.pt"
+  output_base_dir: "outputs"
+  reports_dir: "outputs/reports"
+  predicts_dir: "outputs/predicts"
+  runs_dir: "outputs/runs"
+
+# Cấu hình từng Stage (def run(ctx: dict) -> dict)
+stages:
+  # Giai đoạn 1: Phân đoạn mặt đường & tạo Mask ROI
+  01_segment:
+    enabled: true
+    method: "yolo_seg"                 # yolo_seg | adaptive_otsu | hsv_road | none
+    model_path: "weights/pretrained/yolo11m-road-seg.pt"
+    conf_threshold: 0.25
+    roi_crop_top_ratio: 0.10           # Cắt bớt chân trời / cảnh xa nếu có
+    roi_crop_bottom_ratio: 0.98
+    blur_kernel_size: 5
+    min_road_area_ratio: 0.10
+
+  # Giai đoạn 2: Nhận diện mô hình YOLO (Cắt mảnh 640x640 có gối đầu)
+  02_detect:
+    enabled: true
+    model_path: "weights/trained/roadguard_best_15k.pt"
+    conf_threshold: 0.25
+    iou_threshold: 0.45
+    use_tiling: true
+    tile_size: 640
+    tile_overlap: 0.20
+
+  # Giai đoạn 3: Lọc nhiễu theo Mask mặt đường, diện tích BBox & Target Band
+  03_filter:
+    enabled: true
+    min_confidence: 0.25
+    min_box_area_px: 64
+    max_box_area_ratio: 0.50
+    mask_intersection_threshold: 0.35  # Tối thiểu 35% diện tích box phải nằm trên mặt đường
+    target_band: "SURFACE"             # SURFACE | LEFT_EDGE | RIGHT_EDGE | ALL
+
+  # Giai đoạn 4: Khử trùng lặp đa khung hình & ghép mảnh Tile (Deduplication)
+  04_dedup:
+    enabled: true
+    time_threshold_s: 2.0
+    frame_threshold: 4
+    spatial_dist_norm_threshold: 0.20
+    visual_similarity_threshold: 0.76
+    gps_distance_m: 2.0
+
+  # Giai đoạn 5: Đo đạc 2D, quy đổi GSD, phân cấp Severity & Tọa độ thực WGS84
+  05_measure:
+    enabled: true
+    default_altitude_m: 10.0           # TẠM — chờ thông số camera thật
+    default_gsd_mm_per_px: 5.325       # TẠM — chờ thông số camera thật (Chuẩn DJI Mini 2 SE tại độ cao 10m)
+    sensor_width_mm: 6.17              # TẠM — chờ thông số camera thật
+    focal_length_mm: 4.26              # TẠM — chờ thông số camera thật
+    classify_severity: true
+    calculate_georeference: true
+
+  # Giai đoạn 6: Thẩm định chuyên gia KTV / Giám định hình thái & Lọc False Alarms
+  06_inspect:
+    enabled: true
+    provider: "heuristic"              # heuristic | kdv_gpt54
+    filter_false_alarms: true
+    analyze_crack_morphology: true
+
+  # Giai đoạn 7: Đóng gói Báo cáo AIDetection Schema JSON & GeoJSON FeatureCollection
+  07_report:
+    enabled: true
+    save_crops: true
+    save_annotated_frames: true
+    save_inspection_json: true
+    save_inspection_geojson: true
+    save_inspection_pdf: true

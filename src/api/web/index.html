@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@600;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoadGuard AI — Kiểm Thử Mô Hình & Đánh Giá Video</title>
+  <style>
+    :root {
+      --bg: #F4F7FA;
+      --card-bg: #FFFFFF;
+      --card-border: #D5DEE8;
+      --panel-dark: #061826;
+      --primary: #1E88C7;
+      --primary-hover: #176ea3;
+      --text: #0A2540;
+      --text-body: #3D4F61;
+      --text-muted: #7A8FA3;
+      --metallic: #AEB9C6;
+      --badge-bg: #D6E9F5;
+      --badge-text: #0A2540;
+      --danger: #E5484D;
+      --border: #D5DEE8;
+    }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    }
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      padding: 24px; 
+      line-height: 1.5; 
+    }
+    .container { max-width: 1440px; margin: 0 auto; }
+    header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding-bottom: 18px; 
+      border-bottom: 2px solid var(--card-border); 
+      margin-bottom: 24px; 
+    }
+    header h1 { 
+      font-size: 20px; 
+      font-weight: 700; 
+      color: var(--text); 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      letter-spacing: -0.3px;
+    }
+    .badge { 
+      background: var(--badge-bg); 
+      color: var(--badge-text); 
+      padding: 4px 10px; 
+      border-radius: 4px; 
+      font-size: 11px; 
+      font-weight: 700; 
+      font-family: 'Azeret Mono', monospace;
+      text-transform: uppercase;
+      border: 1px solid var(--card-border);
+    }
+    
+    .grid { display: grid; grid-template-columns: 390px 1fr; gap: 24px; }
+    @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+
+    .card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      border-radius: 12px; 
+      padding: 20px; 
+      margin-bottom: 20px; 
+       
+    }
+    .card-title { 
+      font-size: 14px; 
+      font-weight: 700; 
+      margin-bottom: 14px; 
+      color: var(--primary); 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+      font-family: 'Azeret Mono', monospace;
+      text-transform: uppercase;
+    }
+
+    label { 
+      display: block; 
+      font-size: 12.5px; 
+      font-weight: 600; 
+      color: var(--text-body); 
+      margin-bottom: 6px; 
+    }
+    input[type="text"], select, input[type="file"] { 
+      width: 100%; 
+      padding: 9px 12px; 
+      background: #FFFFFF; 
+      border: 1px solid var(--card-border); 
+      border-radius: 4px; 
+      color: var(--text); 
+      font-size: 13.5px; 
+      margin-bottom: 14px; 
+    }
+    input[type="range"] { width: 100%; accent-color: var(--primary); }
+    .range-val { font-weight: bold; color: var(--primary); float: right; font-family: 'Azeret Mono', monospace; }
+
+    .radio-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .radio-opt { 
+      display: flex; 
+      align-items: flex-start; 
+      gap: 10px; 
+      background: #FFFFFF; 
+      padding: 12px; 
+      border-radius: 6px; 
+      border: 1px solid var(--card-border); 
+      cursor: pointer; 
+      transition: border-color 0.15s;
+    }
+    .radio-opt:hover { border-color: var(--primary); background: #F4F7FA; }
+    .radio-opt input { margin-top: 3px; accent-color: var(--primary); }
+
+    .btn { 
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center; 
+      width: 100%; 
+      padding: 11px 16px; 
+      border-radius: 4px; 
+      font-size: 14px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      border: none; 
+      transition: 0.15s; 
+      font-family: 'Inter', sans-serif;
+      
+    }
+    .btn-primary { 
+      background: var(--primary); 
+      color: #FFFFFF; 
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { background: var(--metallic); cursor: not-allowed; opacity: 0.6; }
+
+    .progress-box { margin-top: 15px; display: none; }
+    .progress-bar-bg { 
+      width: 100%; 
+      height: 10px; 
+      background: var(--bg); 
+      border-radius: 4px; 
+      overflow: hidden; 
+      border: 1px solid var(--card-border); 
+      margin: 8px 0; 
+    }
+    .progress-bar-fill { 
+      height: 100%; 
+      width: 0%; 
+      background: var(--primary) !important; 
+      transition: width 0.3s; 
+    }
+    .status-text { 
+      font-size: 12px; 
+      color: var(--text-muted); 
+      display: flex; 
+      justify-content: space-between; 
+      font-family: 'Azeret Mono', monospace;
+    }
+
+    /* Results layout */
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat-item { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      border-radius: 8px; 
+      padding: 14px; 
+      text-align: center; 
+      
+    }
+    .stat-num { font-size: 24px; font-weight: 700; color: var(--text); font-family: 'Azeret Mono', monospace; }
+    .stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 600; text-transform: uppercase; }
+
+    .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--card-border); margin-bottom: 16px; }
+    .tab-btn { 
+      background: none; 
+      border: none; 
+      color: var(--text-muted); 
+      font-size: 13.5px; 
+      font-weight: 600; 
+      padding: 9px 16px; 
+      cursor: pointer; 
+      border-bottom: 2px solid transparent; 
+      font-family: 'Inter', sans-serif;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Frame viewer */
+    .viewer-box { 
+      text-align: center; 
+      background: var(--panel-dark); 
+      border-radius: 8px; 
+      overflow: hidden; 
+      border: 1px solid var(--card-border); 
+      margin-bottom: 12px; 
+    }
+    .viewer-img { max-width: 100%; max-height: 520px; object-fit: contain; display: block; margin: 0 auto; }
+    .nav-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+    .btn-sm { 
+      padding: 7px 14px; 
+      font-size: 12.5px; 
+      width: auto; 
+      border-radius: 4px; 
+      background: #FFFFFF; 
+      color: var(--text); 
+      cursor: pointer; 
+      border: 1px solid var(--card-border); 
+      font-weight: 600;
+      
+    }
+    .btn-sm:hover { background: #F4F7FA; border-color: var(--primary); }
+
+    /* Crops grid */
+    .crops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; max-height: 520px; overflow-y: auto; padding: 4px; }
+    .crop-card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      border-radius: 6px; 
+      overflow: hidden; 
+      text-align: center; 
+      position: relative;
+      
+    }
+    .crop-img { width: 100%; height: 120px; object-fit: cover; background: var(--panel-dark); }
+    .crop-info { padding: 8px; font-size: 12px; }
+    .tag-crack { color: var(--text); font-weight: 700; }
+    .tag-pothole { color: var(--danger); font-weight: 700; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    th { 
+      background: #F4F7FA; 
+      padding: 10px 12px; 
+      color: var(--text); 
+      font-weight: 700; 
+      border-bottom: 2px solid var(--card-border); 
+      font-family: 'Azeret Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--card-border); color: var(--text-body); }
+    tr:hover { background: #F4F7FA; }
+
+    /* Curation & Selection styles */
+    .selection-bar { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      background: #FFFFFF; 
+      padding: 12px 16px; 
+      border-radius: 8px; 
+      border: 1px solid var(--card-border); 
+      margin-bottom: 14px; 
+      flex-wrap: wrap; 
+      gap: 10px; 
+      
+    }
+    .crop-card.selected { border-color: var(--primary); border-width: 2px; }
+    .crop-select-checkbox { position: absolute; top: 8px; left: 8px; width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; z-index: 10; }
+    .btn-ai-curate { 
+      background: var(--primary) !important; 
+      color: #FFFFFF !important; 
+      font-weight: 700; 
+      border: none; 
+      padding: 9px 18px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px; 
+      font-size: 13px; 
+       
+    }
+    .btn-ai-curate:hover { background: var(--primary-hover) !important; }
+    .btn-ai-curate:disabled { background: var(--metallic) !important; cursor: not-allowed; opacity: 0.6; }
+    
+    .badge-verified { background: var(--badge-bg); color: var(--badge-text); border: 1px solid var(--primary); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; display: inline-block; }
+    .badge-false { background: #E9EFF5; color: var(--text-muted); border: 1px solid var(--card-border); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block; }
+    .badge-severity { padding: 3px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 700; font-family: 'Azeret Mono', monospace; }
+    .sev-critical { background: var(--danger); color: #FFFFFF; }
+    .sev-medium { background: #E9EFF5; color: var(--text); border: 1px solid var(--card-border); }
+    .sev-low { background: var(--badge-bg); color: var(--badge-text); }
+    
+    .curation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; max-height: 520px; overflow-y: auto; padding: 4px; }
+    .curation-card { 
+      background: #FFFFFF; 
+      border: 1px solid var(--card-border); 
+      border-radius: 8px; 
+      padding: 14px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 8px; 
+      
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1> RoadGuard AI — Test Bench Kiểm Thử Video</h1>
+      <div>
+        <span class="badge" id="modelBadge">Model: Đang tải...</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- CỘT TRÁI: ĐIỀU KHIỂN & CẤU HÌNH -->
+      <div>
+        <div class="card">
+          <div class="card-title">[Mục] 1. Chọn Nguồn Dữ Liệu</div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <button type="button" class="btn-sm" id="modeBtnVideo" style="flex: 1; background: #0284c7; color: #fff; font-weight: 600; padding: 8px;" onclick="switchSourceMode('video')">
+              [Video] Video Drone
+            </button>
+            <button type="button" class="btn-sm" id="modeBtnDataset" style="flex: 1; background: #334155; color: #94a3b8; font-weight: 600; padding: 8px;" onclick="switchSourceMode('dataset')">
+              [Gói] Dataset ZIP / Folder
+            </button>
+          </div>
+          
+          <!-- KHỐI 1A: NGUỒN VIDEO -->
+          <div id="videoSourceContainer">
+            <div class="radio-group">
+              <label class="radio-opt">
+                <input type="radio" name="videoSource" value="preset" checked onchange="toggleSource()">
+                <div style="width: 100%;">
+                  <strong>Chọn video mẫu có sẵn trên máy:</strong>
+                  <select id="presetVideoSelect" style="margin-top: 6px; margin-bottom: 2px;" onchange="updatePresetPath()"></select>
+                </div>
+              </label>
+
+              <label class="radio-opt">
+                <input type="radio" name="videoSource" value="upload" onchange="toggleSource()">
+                <div>
+                  <strong>Tải video mới từ máy tính</strong>
+                  <p style="font-size: 12px; color: var(--text-muted);">Định dạng .mp4, .mov, .avi</p>
+                </div>
+              </label>
+
+              <label class="radio-opt">
+                <input type="radio" name="videoSource" value="custom_path" onchange="toggleSource()">
+                <div>
+                  <strong>Nhập đường dẫn file trên máy</strong>
+                  <p style="font-size: 12px; color: var(--text-muted);">Ví dụ: D:\video\test.mp4</p>
+                </div>
+              </label>
+            </div>
+
+            <div id="uploadField" style="display: none;">
+              <label>Chọn tệp video:</label>
+              <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/x-msvideo" onchange="onVideoSelected(this)">
+            </div>
+
+            <div id="customPathField" style="display: none;">
+              <label>Đường dẫn tệp video tuyệt đối:</label>
+              <input type="text" id="customVideoPath" placeholder="C:\Users\...\video.mp4">
+            </div>
+
+            <div style="margin-top: 14px;">
+              <button type="button" class="btn btn-primary" id="startBtnVideoTop" onclick="startAnalysis()" style="background: var(--primary); font-size: 15px; font-weight: 700; width: 100%; padding: 12px; border-radius: 8px;">
+                 BẮT ĐẦU PHÂN TÍCH VIDEO
+              </button>
+            </div>
+          </div>
+
+          <!-- KHỐI 1B: NGUỒN DATASET ZIP / FOLDER -->
+          <div id="datasetSourceContainer" style="display: none;">
+            <div class="radio-group">
+              <label class="radio-opt">
+                <input type="radio" name="datasetSource" value="preset_ds" checked onchange="toggleDatasetSource()">
+                <div style="width: 100%;">
+                  <strong>Chọn Dataset mẫu có sẵn:</strong>
+                  <select id="presetDatasetSelect" style="margin-top: 6px; margin-bottom: 2px;" onchange="updatePresetDatasetPath(); onDatasetPresetChanged()"></select>
+                </div>
+              </label>
+
+              <label class="radio-opt">
+                <input type="radio" name="datasetSource" value="upload_zip" onchange="toggleDatasetSource()">
+                <div>
+                  <strong>Tải file nén Dataset (.ZIP)</strong>
+                  <p style="font-size: 12px; color: var(--text-muted);">Tự động giải nén và quét đệ quy các ảnh</p>
+                </div>
+              </label>
+
+              <label class="radio-opt">
+                <input type="radio" name="datasetSource" value="upload_folder" onchange="toggleDatasetSource()">
+                <div>
+                  <strong>[Thư mục] Tải cả THƯ MỤC ẢNH từ máy tính (Folder Upload)</strong>
+                  <p style="font-size: 12px; color: var(--text-muted);">Chọn trực tiếp một folder chứa nhiều ảnh</p>
+                </div>
+              </label>
+
+              <label class="radio-opt">
+                <input type="radio" name="datasetSource" value="custom_ds_path" onchange="toggleDatasetSource()">
+                <div>
+                  <strong>Nhập đường dẫn ZIP hoặc Thư mục ảnh</strong>
+                  <p style="font-size: 12px; color: var(--text-muted);">Ví dụ: F:\dataset\uav_crack.zip hoặc F:\data\images</p>
+                </div>
+              </label>
+            </div>
+
+            <div id="datasetUploadField" style="display: none;">
+              <label>Chọn file nén .ZIP dataset:</label>
+              <input type="file" id="datasetZipFileInput" accept=".zip" onchange="onZipSelected(this)">
+            </div>
+
+            <div id="datasetFolderUploadField" style="display: none;">
+              <label>Chọn thư mục ảnh từ máy tính:</label>
+              <input type="file" id="datasetFolderInput" webkitdirectory directory multiple onchange="onFolderSelected(this)">
+              <p style="font-size: 11px; color: #38bdf8; margin-top: 4px;">
+                [Ghi chú] Bạn có thể chọn trực tiếp 1 thư mục chứa hàng chục / hàng trăm ảnh trên máy.
+              </p>
+            </div>
+
+            <div id="datasetCustomPathField" style="display: none;">
+              <label>Đường dẫn tệp .ZIP hoặc Thư mục ảnh:</label>
+              <input type="text" id="customDatasetPath" placeholder="D:\datasets\road_dataset.zip" oninput="onCustomDatasetPathChanged(this)">
+            </div>
+
+            <label style="margin-top: 10px;">Số ảnh quét tối đa:</label>
+            <select id="maxImagesSelect">
+              <option value="10">10 ảnh (Kiểm tra siêu nhanh)</option>
+              <option value="50" selected>50 ảnh (Khuyên dùng)</option>
+              <option value="100">100 ảnh</option>
+              <option value="0">Tất cả ảnh trong dataset</option>
+            </select>
+
+            <!-- HỘP THÔNG BÁO TỆP & NÚT KÍCH HOẠT TRỰC TIẾP TẠI BƯỚC 1 -->
+            <div id="datasetSelectionSummary" style="display: none; margin-top: 12px; padding: 10px 14px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; font-size: 13px; color: #6ee7b7;">
+              <span id="datasetSelectionText">[Mục] Đã chọn dữ liệu</span>
+            </div>
+
+            <div style="margin-top: 14px;">
+              <button type="button" class="btn btn-primary" id="startBtnDataset" onclick="startAnalysis()" style="background: var(--primary); font-size: 15px; font-weight: 700; padding: 13px 16px; width: 100%; border-radius: 8px;  cursor: pointer; transition: all 0.2s ease;">
+                 BẮT ĐẦU QUÉT DATASET
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">[Cấu hình] 2. Cấu Hình Kiểm Thử</div>
+
+          <label>Mô hình AI:</label>
+          <select id="modelSelect"></select>
+
+          <label>Ngưỡng tin cậy (Confidence): <span class="range-val" id="confVal">0.25 (25%)</span></label>
+          <input type="range" id="confThreshold" min="0.10" max="0.80" step="0.05" value="0.25" oninput="updateConf(this.value)">
+
+          <!-- CẤU HÌNH VIDEO (ẨN KHI Ở CHẾ ĐỘ DATASET ĐỂ GIAO DIỆN GỌN GÀNG) -->
+          <div id="videoOnlyConfig">
+            <label style="margin-top: 14px;">Thời lượng kiểm thử:</label>
+            <select id="durationSelect">
+              <option value="10">10 giây đầu (Kiểm tra nhanh)</option>
+              <option value="30" selected>30 giây đầu (Khuyên dùng)</option>
+              <option value="60">60 giây đầu</option>
+              <option value="0">Toàn bộ video</option>
+            </select>
+
+            <label>Tần suất lấy mẫu:</label>
+            <select id="samplingSelect">
+              <option value="1">1 khung hình / giây (1 fps - Nhanh)</option>
+              <option value="2" selected>2 khung hình / giây (2 fps - Chuẩn RoadGuard)</option>
+            </select>
+
+            <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="useTiling" checked style="width: auto;">
+              <label for="useTiling" style="margin-bottom: 0; cursor: pointer; color: #fff;">
+                Bật cắt mảnh gối đầu (Tiling 640x640 + NMS)
+              </label>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+              * Cắt nhỏ ảnh để phát hiện rõ các vết nứt và ổ gà nhỏ từ độ cao flycam.
+            </p>
+
+            <div style="margin-top: 10px; padding: 10px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="autoCurateKtv" checked style="width: auto;">
+                <label for="autoCurateKtv" style="margin-bottom: 0; cursor: pointer; color: #38bdf8; font-weight: 600; font-size: 13px;">
+                  [Nhanh] Tự động chạy KTV AI thẩm định ngay sau khi quét
+                </label>
+              </div>
+              <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                KTV AI (GPT-5.4 Vision) sẽ tự động đối chiếu bối cảnh, đổi nhãn và lọc bỏ bóng râm để bạn đánh giá hiệu quả ngay.
+              </p>
+            </div>
+          </div>
+
+          <div style="margin-top: 20px;">
+            <button class="btn btn-primary" id="startBtn" onclick="startAnalysis()">
+               BẮT ĐẦU PHÂN TÍCH
+            </button>
+          </div>
+
+          <div class="progress-box" id="progressBox">
+            <div class="status-text">
+              <span id="statusLabel">Đang khởi tạo mô hình...</span>
+              <span id="pctLabel">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+            <div class="status-text" style="font-size: 11px; color: #64748b;" id="subStatus">
+              Frame: 0/0 • Tốc độ: -- FPS
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CỘT PHẢI: KẾT QUẢ TRỰC QUAN -->
+      <div>
+        <!-- THỐNG KÊ TỔNG QUAN -->
+        <div class="stat-row">
+          <div class="stat-item">
+            <div class="stat-num" id="statFrames">0</div>
+            <div class="stat-lbl">Khung hình soi</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" id="statTotalDefects" style="color: #38bdf8;">0</div>
+            <div class="stat-lbl">Tổng khuyết tật</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" id="statCracks" style="color: #f59e0b;">0</div>
+            <div class="stat-lbl">Vết nứt (Crack)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" id="statPotholes" style="color: #ef4444;">0</div>
+            <div class="stat-lbl">Ổ gà (Pothole)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" id="statFps" style="color: #10b981;">0</div>
+            <div class="stat-lbl">Tốc độ (FPS)</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('viewerTab', this)">[Ảnh] Trình Xem Khung Hình</button>
+            <button class="tab-btn" onclick="switchTab('cropsTab', this)">[Chi tiết] Bộ Sưu Tập Cận Cảnh (<span id="cropsCount">0</span>)</button>
+            <button class="tab-btn" onclick="switchTab('curationTab', this)"> KDV Thẩm Định & Gắn Tag (<span id="curatedCount">0</span>)</button>
+            <button class="tab-btn" onclick="switchTab('tableTab', this)">[Danh sách] Bảng Dữ Liệu Chi Tiết</button>
+          </div>
+
+          <!-- TAB 1: FRAME VIEWER -->
+          <div id="viewerTab" class="tab-content active">
+            <div class="viewer-box">
+              <img id="mainViewerImg" class="viewer-img" src="" alt="Chưa có kết quả" style="display: none;">
+              <div id="placeholderViewer" style="padding: 120px 20px; color: #64748b;">
+                Nhấn <strong>"Bắt đầu phân tích"</strong> để xem kết quả nhận diện từng khung hình tại đây.
+              </div>
+            </div>
+
+            <div class="nav-controls" id="navControls" style="display: none;">
+              <button class="btn-sm" onclick="prevFrame()">◀ Khung trước</button>
+              <span id="frameIndicator" style="font-size: 13px; font-weight: 600;">Khung hình: 0 / 0</span>
+              <button class="btn-sm" onclick="nextFrame()">Khung tiếp ▶</button>
+            </div>
+            <div id="frameDetails" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;"></div>
+            
+            <div id="overviewBtnContainer" style="display: none; margin-top: 12px; text-align: center;">
+              <button class="btn-ai-curate" id="btnInspectOverviewFrame" onclick="inspectCurrentOverviewFrame()" style="background: var(--primary);  font-size: 13px; font-weight: 700; padding: 10px 18px; border-radius: 8px;">
+                [Xem] KTV AI ĐỌC TOÀN CẢNH KHUNG HÌNH NÀY (Dual-View Context)
+              </button>
+            </div>
+
+            <div id="overviewInspectionResult" style="display: none; margin-top: 12px; background: #0b1329; border: 1px solid #38bdf8; border-radius: 8px; padding: 14px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+                <span style="font-weight: 700; color: #38bdf8;"> Nhận định Toàn cảnh từ KTV AI (GPT-5.4 Vision - Broad Context)</span>
+                <button class="btn-sm" onclick="document.getElementById('overviewInspectionResult').style.display='none'">✕ Đóng</button>
+              </div>
+              <div id="overviewInspectionContent"></div>
+            </div>
+          </div>
+
+          <!-- TAB 2: CROPS GALLERY -->
+          <div id="cropsTab" class="tab-content">
+            <div class="selection-bar" id="selectionBar" style="display: none;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; color: #fff; font-size: 13px;">
+                  <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width: auto;"> Chọn tất cả
+                </label>
+                <button class="btn-sm" onclick="filterSelection('pothole')">Chỉ Ổ gà</button>
+                <button class="btn-sm" onclick="filterSelection('crack')">Chỉ Vết nứt</button>
+                <button class="btn-sm" onclick="clearSelection()">Bỏ chọn</button>
+                <span style="font-size: 12px; color: #38bdf8; font-weight: 600;" id="selectionSummary">Đã chọn: 0 mục</span>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn-ai-curate" id="btnCurate" onclick="runAiCuration()" disabled>
+                  [KTV AI] GỬI MỤC ĐÃ CHỌN (<span id="btnCurateCount">0</span>)
+                </button>
+                <button class="btn-ai-curate" style="background: var(--primary); " id="btnInspectOverviewAll" onclick="runOverviewContextCurationAll()">
+                  [Xem] KTV ĐỌC KHUNG TỔNG THỂ (Dual-View Context)
+                </button>
+                <button class="btn-ai-curate" style="background: var(--primary); " id="btnCurateAll" onclick="runAiCurationAll()">
+                  [Nhanh] KTV ĐỌC TOÀN BỘ (<span id="btnCurateAllCount">0</span> ảnh • 100 ảnh / 1 req)
+                </button>
+                <button class="btn-ai-curate" style="background: var(--primary); " id="btnAssessCracks" onclick="runCrackAssessment()">
+                  [Mục tiêu] ĐÁNH GIÁ & PHÂN LOẠI VẾT NỨT
+                </button>
+              </div>
+            </div>
+
+            <div id="ktvPromptBanner" style="display: none; background: var(--primary), rgba(139, 92, 246, 0.18)); border: 1px solid #0284c7; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <strong style="color: #38bdf8; font-size: 13px;">[Nhanh] BẠN ĐANG XEM KẾT QUẢ QUÉT THÔ CỦA YOLO (Chưa qua KTV AI thẩm định)</strong>
+                <p style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">Bấm nút bên phải để KTV AI (GPT-5.4 Vision) phân loại vết nứt, loại bỏ bóng râm và đánh giá bối cảnh toàn khung hình.</p>
+              </div>
+              <button class="btn-ai-curate" onclick="runOverviewContextCurationAll()" style="background: var(--primary); padding: 8px 16px; font-size: 12px; font-weight: 700; ">
+                [Xem] KÍCH HOẠT KTV THẨM ĐỊNH NGAY
+              </button>
+            </div>
+
+            <div class="crops-grid" id="cropsGrid">
+              <div style="grid-column: 1 / -1; text-align: center; padding: 60px; color: #64748b;">
+                Chưa có ảnh cắt khuyết tật.
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: AI CURATION & DATASET EXPORT -->
+          <div id="curationTab" class="tab-content">
+            <div class="selection-bar" id="curationActionBar" style="display: none; flex-direction: column; gap: 10px; align-items: stretch;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div id="curationStats" style="font-size: 13px; color: var(--text);">
+                  [Thống kê] Đã phân tích: <strong id="curCountAnalyzed">0</strong> ảnh | [Mục tiêu] Khuyết tật độc nhất (Không trùng): <span style="color: #34d399; font-weight: bold;" id="curCountUnique">0</span> | ⚠️ Báo động giả: <span style="color: #fb923c; font-weight: bold;" id="curCountFalse">0</span> | [Trùng lặp] Trùng lặp đã gộp: <span style="color: #38bdf8; font-weight: bold;" id="curCountDup">0</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn-sm" style="background: var(--primary); color: #fff; font-weight: 600; padding: 6px 12px;" onclick="runOverviewContextCurationAll()">
+                    [Xem] Thẩm định Bối cảnh Toàn cảnh (Dual-View)
+                  </button>
+                  <button class="btn-sm" style="background: var(--primary); color: #fff; font-weight: 600; padding: 6px 12px;" onclick="runCrackAssessment()">
+                    [Mục tiêu] Đánh giá Vết nứt Chuyên sâu
+                  </button>
+                  <button class="btn-ai-curate" style="background: var(--primary);" id="btnExportDataset" onclick="exportDatasetZip()">
+                    [Gói] ĐÓNG GÓI DATASET CHUẨN YOLO (.ZIP)
+                  </button>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+                <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">Xem nhanh:</span>
+                <button class="btn-sm" id="btnFilterCurAll" onclick="filterCurationDisplay('all')">Tất cả (<span id="curCountAll">0</span>)</button>
+                <button class="btn-sm active" id="btnFilterCurUnique" onclick="filterCurationDisplay('unique')" style="color: #34d399; font-weight: 700;">[Mục tiêu] Khuyết tật độc nhất (<span id="curCountUniqueBtn">0</span>)</button>
+                <button class="btn-sm" id="btnFilterCurCracks" onclick="filterCurationDisplay('crack')" style="color: #f59e0b;">[Nhanh] Chỉ Vết nứt (<span id="curCountCrackBtn">0</span>)</button>
+                <button class="btn-sm" id="btnFilterCurPotholes" onclick="filterCurationDisplay('pothole')" style="color: #ef4444;">[Hố] Chỉ Ổ gà (<span id="curCountPotholeBtn">0</span>)</button>
+                <button class="btn-sm" id="btnFilterCurFalse" onclick="filterCurationDisplay('false')" style="color: #fb923c;">⚠️ Báo động giả (<span id="curCountFalseBtn">0</span>)</button>
+                <button class="btn-sm" id="btnFilterCurDup" onclick="filterCurationDisplay('duplicate')" style="color: #38bdf8;">[Trùng lặp] Góc trùng đã gộp (<span id="curCountDupBtn">0</span>)</button>
+              </div>
+            </div>
+
+            <!-- BẢNG ĐÁNH GIÁ HIỆU QUẢ KTV AI (DASHBOARD) -->
+            <div id="ktvEvaluationDashboard" style="display: none; background: #0b1329; border: 1px solid #1e293b; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div style="font-size: 15px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+                  <span> BẢNG ĐÁNH GIÁ HIỆU QUẢ KTV AI (GPT-5.4 VISION vs YOLO LOCAL)</span>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn-sm" id="btnViewModeCards" style="background: #0284c7; color: #fff; font-weight: 600;" onclick="switchCurationView('cards')">[Ảnh] Thẻ Chi Tiết</button>
+                  <button class="btn-sm" id="btnViewModeTable" style="background: #1e293b; color: #94a3b8;" onclick="switchCurationView('table')">[Danh sách] Bảng Đối Chiếu Ma Trận</button>
+                </div>
+              </div>
+
+              <!-- 4 THẺ CHỈ SỐ VÀNG ĐÁNH GIÁ HIỆU QUẢ KTV -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px;">
+                <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+                  <div style="font-size: 11px; color: #94a3b8;">[Mục tiêu] Độ Chính Xác Khuyết Tật</div>
+                  <div style="font-size: 22px; font-weight: 700; color: #10b981;" id="ktvMetricPrecision">--%</div>
+                  <div style="font-size: 10px; color: #64748b;" id="ktvMetricPrecisionSub">0 khuyết tật chuẩn</div>
+                </div>
+
+                <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+                  <div style="font-size: 11px; color: #94a3b8;">[Bảo vệ] Khử Báo Động Giả</div>
+                  <div style="font-size: 22px; font-weight: 700; color: #fb923c;" id="ktvMetricSuppression">--%</div>
+                  <div style="font-size: 10px; color: #64748b;" id="ktvMetricSuppressionSub">0 mẫu lọc bỏ</div>
+                </div>
+
+                <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+                  <div style="font-size: 11px; color: #94a3b8;">[Hoán đổi] Sửa Nhãn / Gắn Tag Tinh</div>
+                  <div style="font-size: 22px; font-weight: 700; color: #38bdf8;" id="ktvMetricRelabel">--%</div>
+                  <div style="font-size: 10px; color: #64748b;" id="ktvMetricRelabelSub">Phân loại chi tiết</div>
+                </div>
+
+                <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+                  <div style="font-size: 11px; color: #94a3b8;">[Trùng lặp] Gộp Trùng Lặp Góc Quay</div>
+                  <div style="font-size: 22px; font-weight: 700; color: #c084fc;" id="ktvMetricDedup">--%</div>
+                  <div style="font-size: 10px; color: #64748b;" id="ktvMetricDedupSub">Gán Defect_ID duy nhất</div>
+                </div>
+              </div>
+
+              <!-- THANH CHIP LỌC THEO TỪNG TAG CỤ THỂ CỦA KTV -->
+              <div style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
+                <div style="font-size: 12px; color: #94a3b8; font-weight: 600; margin-bottom: 6px;">[Nhãn] Xem Chi Tiết Từng Tag Của KTV (Bấm để xem và đánh giá từng nhóm khuyết tật):</div>
+                <div id="ktvTagChipsContainer" style="display: flex; gap: 6px; flex-wrap: wrap;"></div>
+              </div>
+            </div>
+
+            <!-- BẢNG MA TRẬN ĐỐI CHIẾU YOLO vs KTV -->
+            <div id="ktvComparisonTableBox" style="display: none; background: #0b1329; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; margin-bottom: 16px; max-height: 480px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>ID</th>
+                    <th>Ảnh Cận Cảnh</th>
+                    <th>YOLO Gán</th>
+                    <th>KTV Thẩm Định & Đổi Nhãn</th>
+                    <th>Mức Độ</th>
+                    <th>Lập Luận & Khuyến Nghị Kỹ Thuật</th>
+                  </tr>
+                </thead>
+                <tbody id="ktvComparisonTableBody"></tbody>
+              </table>
+            </div>
+
+            <div class="curation-grid" id="curationGrid">
+              <div style="grid-column: 1 / -1; text-align: center; padding: 60px; color: #64748b;">
+                Chưa có dữ liệu thẩm định. Hãy vào tab <strong>"Bộ Sưu Tập Cận Cảnh"</strong>, tích chọn các khuyết tật và nhấn nút <strong>"Gửi sang AI Sàng Lọc & Gắn Tag"</strong>.
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: DATA TABLE -->
+          <div id="tableTab" class="tab-content">
+            <div style="max-height: 480px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Thời điểm (s)</th>
+                    <th>Loại hư hỏng</th>
+                    <th>Độ tin cậy</th>
+                    <th>Tọa độ Box [x1, y1, x2, y2]</th>
+                  </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">Chưa có dữ liệu.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="export-btns" id="exportBtns" style="display: none;">
+              <a class="btn-outline" id="downloadJsonBtn" href="#" download="inspection_report.json">
+                [Nhập] Tải Báo Cáo JSON
+              </a>
+              <a class="btn-outline" id="downloadGeoJsonBtn" href="#" download="inspection_layer.geojson">
+                [Bản đồ] Tải Lớp GeoJSON Bản Đồ
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentTaskId = null;
+    let pollInterval = null;
+    let detectedFrames = [];
+    let currentFrameIdx = 0;
+    let presetVideoPath = "";
+    let presetDatasetPath = "";
+    let currentSourceMode = "video"; // 'video' hoặc 'dataset'
+    let allCrops = [];
+    let selectedCropIndices = new Set();
+    let curatedResultsList = [];
+
+    function updateConf(val) {
+      document.getElementById('confVal').innerText = val + " (" + Math.round(val * 100) + "%)";
+    }
+
+    function setStartButtonsState(disabled, text = null) {
+      const btnMain = document.getElementById('startBtn');
+      const btnDs = document.getElementById('startBtnDataset');
+      const btnVid = document.getElementById('startBtnVideoTop');
+      [btnMain, btnDs, btnVid].forEach(b => {
+        if (b) {
+          b.disabled = disabled;
+          if (text) {
+            b.innerHTML = text;
+          } else if (!disabled) {
+            if (b.id === 'startBtnVideoTop') {
+              b.innerHTML = ' BẮT ĐẦU PHÂN TÍCH VIDEO';
+            } else if (b.id === 'startBtnDataset') {
+              const folderInput = document.getElementById('datasetFolderInput');
+              const zipInput = document.getElementById('datasetZipFileInput');
+              const srcType = document.querySelector('input[name="datasetSource"]:checked')?.value;
+              if (srcType === 'upload_folder' && folderInput && folderInput.files && folderInput.files.length > 0) {
+                b.innerHTML = ` BẮT ĐẦU QUÉT ${folderInput.files.length} ẢNH TRONG THƯ MỤC`;
+              } else if (srcType === 'upload_zip' && zipInput && zipInput.files && zipInput.files.length > 0) {
+                b.innerHTML = ` BẮT ĐẦU GIẢI NÉN & QUÉT FILE ZIP`;
+              } else {
+                b.innerHTML = ' BẮT ĐẦU QUÉT DATASET';
+              }
+            } else if (b.id === 'startBtn') {
+              b.innerHTML = (currentSourceMode === 'dataset') ? '[Gói] BẮT ĐẦU QUÉT DATASET' : ' BẮT ĐẦU PHÂN TÍCH VIDEO';
+            }
+          }
+        }
+      });
+    }
+
+    function onFolderSelected(input) {
+      const count = input.files ? input.files.length : 0;
+      const summaryBox = document.getElementById('datasetSelectionSummary');
+      const summaryText = document.getElementById('datasetSelectionText');
+      const btnDs = document.getElementById('startBtnDataset');
+      const btnBottom = document.getElementById('startBtn');
+
+      if (count > 0) {
+        if (summaryBox) summaryBox.style.display = 'block';
+        if (summaryText) summaryText.innerHTML = `[Mục] Đã nhận <b>${count} tệp ảnh</b> trong thư mục. Nhấn nút bên dưới để phân tích ngay!`;
+        const label = ` BẮT ĐẦU QUÉT ${count} ẢNH TRONG THƯ MỤC`;
+        if (btnDs) btnDs.innerHTML = label;
+        if (btnBottom) btnBottom.innerHTML = label;
+      }
+    }
+
+    function onZipSelected(input) {
+      const f = (input.files && input.files[0]) ? input.files[0] : null;
+      const summaryBox = document.getElementById('datasetSelectionSummary');
+      const summaryText = document.getElementById('datasetSelectionText');
+      const btnDs = document.getElementById('startBtnDataset');
+      const btnBottom = document.getElementById('startBtn');
+
+      if (f) {
+        const sizeMb = (f.size / (1024 * 1024)).toFixed(1);
+        if (summaryBox) summaryBox.style.display = 'block';
+        if (summaryText) summaryText.innerHTML = `[Gói] Đã chọn file ZIP: <b>${f.name}</b> (${sizeMb} MB).`;
+        const label = ` GIẢI NÉN & QUÉT DATASET ZIP (${sizeMb} MB)`;
+        if (btnDs) btnDs.innerHTML = label;
+        if (btnBottom) btnBottom.innerHTML = label;
+      }
+    }
+
+    function onVideoSelected(input) {
+      const f = (input.files && input.files[0]) ? input.files[0] : null;
+      if (f) {
+        const sizeMb = (f.size / (1024 * 1024)).toFixed(1);
+        const label = ` PHÂN TÍCH VIDEO (${f.name} - ${sizeMb} MB)`;
+        const btnVid = document.getElementById('startBtnVideoTop');
+        const btnBottom = document.getElementById('startBtn');
+        if (btnVid) btnVid.innerHTML = label;
+        if (btnBottom) btnBottom.innerHTML = label;
+      }
+    }
+
+    function onCustomDatasetPathChanged(input) {
+      const val = input.value.trim();
+      const summaryBox = document.getElementById('datasetSelectionSummary');
+      const summaryText = document.getElementById('datasetSelectionText');
+      const btnDs = document.getElementById('startBtnDataset');
+      const btnBottom = document.getElementById('startBtn');
+      if (val) {
+        if (summaryBox) summaryBox.style.display = 'block';
+        if (summaryText) summaryText.innerHTML = `[Mục] Sẵn sàng quét từ: <b>${val}</b>`;
+        const label = ` QUÉT TỪ ĐƯỜNG DẪN ĐÃ NHẬP`;
+        if (btnDs) btnDs.innerHTML = label;
+        if (btnBottom) btnBottom.innerHTML = label;
+      }
+    }
+
+    function onDatasetPresetChanged() {
+      const sel = document.getElementById('presetDatasetSelect');
+      const text = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : 'Dataset mẫu';
+      const summaryBox = document.getElementById('datasetSelectionSummary');
+      const summaryText = document.getElementById('datasetSelectionText');
+      const btnDs = document.getElementById('startBtnDataset');
+      const btnBottom = document.getElementById('startBtn');
+      if (summaryBox) summaryBox.style.display = 'block';
+      if (summaryText) summaryText.innerHTML = `[Gói] Đã chọn: <b>${text}</b>`;
+      const label = ' BẮT ĐẦU QUÉT DATASET MẪU';
+      if (btnDs) btnDs.innerHTML = label;
+      if (btnBottom) btnBottom.innerHTML = label;
+    }
+
+    function switchSourceMode(mode) {
+      currentSourceMode = mode;
+      const btnVid = document.getElementById('modeBtnVideo');
+      const btnDs = document.getElementById('modeBtnDataset');
+      const boxVid = document.getElementById('videoSourceContainer');
+      const boxDs = document.getElementById('datasetSourceContainer');
+      const vidConfig = document.getElementById('videoOnlyConfig');
+      const startBtn = document.getElementById('startBtn');
+
+      if (mode === 'video') {
+        btnVid.style.background = '#0284c7';
+        btnVid.style.color = '#fff';
+        btnDs.style.background = '#334155';
+        btnDs.style.color = '#94a3b8';
+        boxVid.style.display = 'block';
+        boxDs.style.display = 'none';
+        if (vidConfig) vidConfig.style.display = 'block';
+        if (startBtn) {
+          startBtn.innerText = ' BẮT ĐẦU PHÂN TÍCH VIDEO';
+          startBtn.style.background = 'var(--primary)';
+        }
+      } else {
+        btnDs.style.background = '#10b981';
+        btnDs.style.color = '#fff';
+        btnVid.style.background = '#334155';
+        btnVid.style.color = '#94a3b8';
+        boxVid.style.display = 'none';
+        boxDs.style.display = 'block';
+        if (vidConfig) vidConfig.style.display = 'none';
+        if (startBtn) {
+          startBtn.innerText = '[Gói] BẮT ĐẦU QUÉT DATASET';
+          startBtn.style.background = 'var(--primary)';
+        }
+        toggleDatasetSource();
+      }
+    }
+
+    function toggleSource() {
+      const src = document.querySelector('input[name="videoSource"]:checked').value;
+      document.getElementById('uploadField').style.display = (src === 'upload') ? 'block' : 'none';
+      document.getElementById('customPathField').style.display = (src === 'custom_path') ? 'block' : 'none';
+    }
+
+    function toggleDatasetSource() {
+      const src = document.querySelector('input[name="datasetSource"]:checked')?.value || 'preset_ds';
+      document.getElementById('datasetUploadField').style.display = (src === 'upload_zip') ? 'block' : 'none';
+      document.getElementById('datasetFolderUploadField').style.display = (src === 'upload_folder') ? 'block' : 'none';
+      document.getElementById('datasetCustomPathField').style.display = (src === 'custom_ds_path') ? 'block' : 'none';
+
+      const summaryBox = document.getElementById('datasetSelectionSummary');
+      const summaryText = document.getElementById('datasetSelectionText');
+      const btnDs = document.getElementById('startBtnDataset');
+      const btnBottom = document.getElementById('startBtn');
+
+      if (src === 'preset_ds') {
+        const sel = document.getElementById('presetDatasetSelect');
+        const text = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : 'Dataset mẫu';
+        if (summaryBox) summaryBox.style.display = 'block';
+        if (summaryText) summaryText.innerHTML = `[Gói] Đã chọn nguồn mẫu: <b>${text}</b>`;
+        const label = ' BẮT ĐẦU QUÉT DATASET MẪU';
+        if (btnDs) btnDs.innerHTML = label;
+        if (btnBottom) btnBottom.innerHTML = label;
+      } else if (src === 'upload_zip') {
+        const fInput = document.getElementById('datasetZipFileInput');
+        if (fInput && fInput.files && fInput.files.length > 0) {
+          onZipSelected(fInput);
+        } else {
+          if (summaryBox) summaryBox.style.display = 'none';
+          const label = ' BẮT ĐẦU QUÉT DATASET (.ZIP)';
+          if (btnDs) btnDs.innerHTML = label;
+          if (btnBottom) btnBottom.innerHTML = label;
+        }
+      } else if (src === 'upload_folder') {
+        const folderInput = document.getElementById('datasetFolderInput');
+        if (folderInput && folderInput.files && folderInput.files.length > 0) {
+          onFolderSelected(folderInput);
+        } else {
+          if (summaryBox) summaryBox.style.display = 'none';
+          const label = ' BẮT ĐẦU QUÉT THƯ MỤC ẢNH';
+          if (btnDs) btnDs.innerHTML = label;
+          if (btnBottom) btnBottom.innerHTML = label;
+        }
+      } else if (src === 'custom_ds_path') {
+        const p = document.getElementById('customDatasetPath')?.value?.trim();
+        if (p) {
+          if (summaryBox) summaryBox.style.display = 'block';
+          if (summaryText) summaryText.innerHTML = `[Mục] Đường dẫn trực tiếp: <b>${p}</b>`;
+          const label = ' QUÉT TỪ ĐƯỜNG DẪN ĐÃ NHẬP';
+          if (btnDs) btnDs.innerHTML = label;
+          if (btnBottom) btnBottom.innerHTML = label;
+        } else {
+          if (summaryBox) summaryBox.style.display = 'none';
+          const label = ' QUÉT DATASET TỪ ĐƯỜNG DẪN';
+          if (btnDs) btnDs.innerHTML = label;
+          if (btnBottom) btnBottom.innerHTML = label;
+        }
+      }
+    }
+
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function updatePresetPath() {
+      const vSelect = document.getElementById('presetVideoSelect');
+      presetVideoPath = vSelect.value;
+    }
+
+    function updatePresetDatasetPath() {
+      const dsSelect = document.getElementById('presetDatasetSelect');
+      presetDatasetPath = dsSelect.value;
+    }
+
+    // Nạp danh sách model, preset video và dataset khi khởi động
+    async function initPage() {
+      try {
+        const res = await fetch('/api/init-info');
+        const data = await res.json();
+        
+        // Populate models
+        const select = document.getElementById('modelSelect');
+        select.innerHTML = '';
+        data.models.forEach((m, idx) => {
+          const opt = document.createElement('option');
+          opt.value = m.path;
+          opt.text = m.name + ' (' + m.size_mb + ' MB)';
+          if (idx === 0) {
+            opt.selected = true;
+          }
+          select.appendChild(opt);
+        });
+
+        const updateModelBadge = () => {
+          const selOpt = select.options[select.selectedIndex];
+          if (selOpt) {
+            document.getElementById('modelBadge').innerText = 'Model: ' + selOpt.text.split(' ')[0];
+          }
+        };
+        updateModelBadge();
+        select.onchange = updateModelBadge;
+
+        // Preset videos
+        const vSelect = document.getElementById('presetVideoSelect');
+        vSelect.innerHTML = '';
+        const vList = data.preset_videos || (data.preset_video ? [data.preset_video] : []);
+        vList.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.path;
+          opt.text = v.name;
+          vSelect.appendChild(opt);
+        });
+        if (vList.length > 0) {
+          presetVideoPath = vList[0].path;
+        }
+
+        // Preset datasets
+        const dsSelect = document.getElementById('presetDatasetSelect');
+        if (dsSelect) {
+          dsSelect.innerHTML = '';
+          const dsList = data.preset_datasets || (data.preset_dataset ? [data.preset_dataset] : []);
+          dsList.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.path;
+            opt.text = d.name;
+            dsSelect.appendChild(opt);
+          });
+          if (dsList.length > 0) {
+            presetDatasetPath = dsList[0].path;
+          }
+        }
+
+        // Tự động nạp kết quả tác vụ mới nhất nếu có
+        if (data.latest_task_id) {
+          currentTaskId = data.latest_task_id;
+          console.log("Auto-loading latest task results:", data.latest_task_id);
+          loadResults(data.latest_task_id);
+        }
+      } catch (err) {
+        console.error("Init failed:", err);
+      }
+    }
+
+    async function startDatasetAnalysis() {
+      const progressBox = document.getElementById('progressBox');
+      const srcType = document.querySelector('input[name="datasetSource"]:checked')?.value || 'preset_ds';
+
+      let zipPath = null;
+      let folderPath = null;
+
+      if (srcType === 'preset_ds') {
+        const p = presetDatasetPath;
+        if (p.endsWith('.zip')) zipPath = p;
+        else folderPath = p;
+      } else if (srcType === 'custom_ds_path') {
+        const p = document.getElementById('customDatasetPath').value.trim();
+        if (!p) {
+          alert("Vui lòng nhập đường dẫn file .ZIP hoặc thư mục dataset!");
+          return;
+        }
+        if (p.endsWith('.zip')) zipPath = p;
+        else folderPath = p;
+      } else if (srcType === 'upload_zip') {
+        const fileInput = document.getElementById('datasetZipFileInput');
+        if (!fileInput.files || fileInput.files.length === 0) {
+          alert("Vui lòng chọn file nén .ZIP để tải lên!");
+          return;
+        }
+        setStartButtonsState(true, '⏳ ĐANG TẢI FILE ZIP LÊN MÁY CHỦ...');
+        document.getElementById('statusLabel').innerText = "Đang tải file ZIP lên máy chủ...";
+        progressBox.style.display = 'block';
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        const uploadRes = await fetch('/api/upload-dataset', { method: 'POST', body: formData });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          alert("Lỗi upload: " + (uploadData.detail || "Thất bại"));
+          setStartButtonsState(false);
+          return;
+        }
+        zipPath = uploadData.saved_path;
+      } else if (srcType === 'upload_folder') {
+        const folderInput = document.getElementById('datasetFolderInput');
+        if (!folderInput.files || folderInput.files.length === 0) {
+          alert("Vui lòng chọn một thư mục chứa ảnh từ máy tính!");
+          return;
+        }
+        const fileCount = folderInput.files.length;
+        setStartButtonsState(true, `⏳ ĐANG TẢI ${fileCount} ẢNH LÊN MÁY CHỦ...`);
+        document.getElementById('statusLabel').innerText = `Đang nạp và tải ${fileCount} ảnh lên máy chủ (vui lòng chờ)...`;
+        progressBox.style.display = 'block';
+
+        const formData = new FormData();
+        for (let i = 0; i < folderInput.files.length; i++) {
+          formData.append("files", folderInput.files[i]);
+        }
+        const uploadRes = await fetch('/api/upload-folder', { method: 'POST', body: formData });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          alert("Lỗi upload thư mục: " + (uploadData.detail || "Thất bại"));
+          setStartButtonsState(false);
+          return;
+        }
+        folderPath = uploadData.saved_path;
+      }
+
+      setStartButtonsState(true, '[Cấu hình] ĐANG KHỞI CHẠY QUÉT AI...');
+      progressBox.style.display = 'block';
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('pctLabel').innerText = '0%';
+      document.getElementById('statusLabel').innerText = 'Bắt đầu giải nén và quét dataset...';
+
+      const maxImgs = parseInt(document.getElementById('maxImagesSelect').value);
+      const payload = {
+        zip_path: zipPath,
+        folder_path: folderPath,
+        model_path: document.getElementById('modelSelect').value,
+        conf_threshold: parseFloat(document.getElementById('confThreshold').value),
+        max_images: maxImgs > 0 ? maxImgs : null
+      };
+
+      try {
+        const res = await fetch('/api/start-dataset-analysis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert("Lỗi khởi tạo: " + data.detail);
+          setStartButtonsState(false);
+          return;
+        }
+        currentTaskId = data.task_id;
+        pollInterval = setInterval(checkStatus, 600);
+      } catch (err) {
+        alert("Lỗi kết nối máy chủ: " + err);
+        setStartButtonsState(false);
+      }
+    }
+
+    async function startAnalysis() {
+      if (currentSourceMode === 'dataset') {
+        return startDatasetAnalysis();
+      }
+
+      const progressBox = document.getElementById('progressBox');
+      const srcType = document.querySelector('input[name="videoSource"]:checked').value;
+      
+      let videoPath = "";
+      if (srcType === 'preset') {
+        videoPath = presetVideoPath;
+      } else if (srcType === 'custom_path') {
+        videoPath = document.getElementById('customVideoPath').value.trim();
+        if (!videoPath) {
+          alert("Vui lòng nhập đường dẫn video!");
+          return;
+        }
+      } else if (srcType === 'upload') {
+        const fileInput = document.getElementById('videoFileInput');
+        if (!fileInput.files || fileInput.files.length === 0) {
+          alert("Vui lòng chọn file video để tải lên!");
+          return;
+        }
+        setStartButtonsState(true, '⏳ ĐANG TẢI VIDEO LÊN MÁY CHỦ...');
+        document.getElementById('statusLabel').innerText = "Đang tải video lên máy chủ...";
+        progressBox.style.display = 'block';
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        const uploadRes = await fetch('/api/upload-video', { method: 'POST', body: formData });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          alert("Lỗi upload: " + uploadData.detail);
+          setStartButtonsState(false);
+          return;
+        }
+        videoPath = uploadData.saved_path;
+      }
+
+      setStartButtonsState(true, '[Cấu hình] ĐANG KHỞI ĐỘNG WORKER AI...');
+      progressBox.style.display = 'block';
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('pctLabel').innerText = '0%';
+      document.getElementById('statusLabel').innerText = 'Bắt đầu khởi động worker AI...';
+
+      const payload = {
+        video_path: videoPath,
+        model_path: document.getElementById('modelSelect').value,
+        conf_threshold: parseFloat(document.getElementById('confThreshold').value),
+        max_duration_seconds: parseInt(document.getElementById('durationSelect').value),
+        sampling_rate_fps: parseInt(document.getElementById('samplingSelect').value),
+        use_tiling: document.getElementById('useTiling').checked
+      };
+
+      try {
+        const res = await fetch('/api/start-analysis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        currentTaskId = data.task_id;
+        pollInterval = setInterval(checkStatus, 600);
+      } catch (err) {
+        alert("Không thể khởi động phân tích: " + err);
+        setStartButtonsState(false);
+      }
+    }
+
+    async function checkStatus() {
+      if (!currentTaskId) return;
+      try {
+        const res = await fetch('/api/task-status/' + currentTaskId);
+        const data = await res.json();
+
+        const pct = Math.round(data.progress_pct);
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('pctLabel').innerText = pct + '%';
+        document.getElementById('statusLabel').innerText = data.message || 'Đang xử lý...';
+        document.getElementById('subStatus').innerText = 
+          "Frame: " + data.processed_frames + "/" + data.total_frames + " • Đã tìm thấy: " + data.defects_found + " khuyết tật";
+
+        if (data.status === 'COMPLETED') {
+          clearInterval(pollInterval);
+          setStartButtonsState(false);
+          document.getElementById('statusLabel').innerText = '✅ Phân tích hoàn tất!';
+          loadResults(currentTaskId);
+        } else if (data.status === 'FAILED') {
+          clearInterval(pollInterval);
+          setStartButtonsState(false);
+          document.getElementById('statusLabel').innerText = '❌ Thất bại: ' + data.error;
+        }
+      } catch (err) {
+        console.error("Poll error:", err);
+      }
+    }
+
+    async function loadResults(taskId) {
+      try {
+        const res = await fetch('/api/task-results/' + taskId);
+        const data = await res.json();
+
+        // Cập nhật thẻ thống kê
+        const s = data.summary;
+        document.getElementById('statFrames').innerText = (s.processed_frames !== undefined) ? s.processed_frames : s.total_frames;
+        document.getElementById('statTotalDefects').innerText = s.total_defects;
+        document.getElementById('statCracks').innerText = (s.crack_count !== undefined) ? s.crack_count : s.cracks_count;
+        document.getElementById('statPotholes').innerText = (s.pothole_count !== undefined) ? s.pothole_count : s.potholes_count;
+        document.getElementById('statFps').innerText = s.fps;
+
+        if (data.dataset_mode) {
+          document.getElementById('subStatus').innerText = 
+            `Quét Dataset: ${s.total_frames} ảnh • Tỷ lệ phát hiện (Hit Rate): ${s.hit_rate_pct}% (${s.defect_frames} ảnh có khuyết tật)`;
+        }
+
+        // Frames viewer
+        detectedFrames = data.frames || [];
+        currentFrameIdx = 0;
+        if (detectedFrames.length > 0) {
+          document.getElementById('placeholderViewer').style.display = 'none';
+          document.getElementById('mainViewerImg').style.display = 'block';
+          document.getElementById('navControls').style.display = 'flex';
+          showFrame(0);
+        } else {
+          document.getElementById('placeholderViewer').innerText = 'Không phát hiện khuyết tật nào vượt ngưỡng tin cậy.';
+        }
+
+        // Crops gallery
+        allCrops = data.crops || [];
+        selectedCropIndices.clear();
+        document.getElementById('cropsCount').innerText = allCrops.length;
+        const grid = document.getElementById('cropsGrid');
+        const selBar = document.getElementById('selectionBar');
+        const ktvBanner = document.getElementById('ktvPromptBanner');
+
+        // Nạp kết quả thẩm định của KTV AI nếu có
+        curatedResultsList = data.curated_items || [];
+        if (curatedResultsList.length > 0) {
+          if (ktvBanner) ktvBanner.style.display = 'none';
+          renderCurationResults(curatedResultsList);
+        } else {
+          if (ktvBanner) ktvBanner.style.display = 'flex';
+          const autoBox = document.getElementById('autoCurateKtv');
+          if (autoBox && autoBox.checked && allCrops.length > 0) {
+            console.log("Auto-triggering KTV overview context curation...");
+            runOverviewContextCurationAll(true);
+          }
+        }
+
+        if (allCrops.length > 0) {
+          selBar.style.display = 'flex';
+          grid.innerHTML = '';
+          allCrops.forEach((c, idx) => {
+            const card = document.createElement('div');
+            card.className = 'crop-card';
+            card.id = `cropCard_${idx}`;
+            const tagClass = c.class_name === 'pothole' ? 'tag-pothole' : 'tag-crack';
+            const cropSrc = c.url || c.crop_url || '';
+
+            // Tìm nhận định KTV tương ứng cho crop này nếu có
+            const matchingCur = curatedResultsList.find(x => 
+              (x.url && (x.url === cropSrc || x.url.endsWith(c.crop_file || ''))) || 
+              (x.crop_url && (x.crop_url === cropSrc || x.crop_url.endsWith(c.crop_file || ''))) ||
+              (x.frame_index === c.frame_index && JSON.stringify(x.box) === JSON.stringify(c.box))
+            );
+
+            let ktvTagBadgeHtml = '';
+            if (matchingCur) {
+              const isVal = matchingCur.is_valid && matchingCur.status === 'VERIFIED';
+              const borderCol = isVal ? '#10b981' : '#f59e0b';
+              const textCol = isVal ? '#34d399' : '#fb923c';
+              ktvTagBadgeHtml = `
+                <div style="margin-top: 4px; padding: 3px 5px; background: rgba(15, 23, 42, 0.95); border: 1px solid ${borderCol}; border-radius: 4px; text-align: left;">
+                  <div style="color: ${textCol}; font-weight: 700; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${isVal ? '✅' : '⚠️'} ${matchingCur.fine_tag}
+                  </div>
+                  <div style="color: #94a3b8; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;" title="${matchingCur.reasoning}">
+                    [Ghi chú] ${matchingCur.reasoning}
+                  </div>
+                </div>
+              `;
+            } else {
+              ktvTagBadgeHtml = `
+                <div style="margin-top: 4px; font-size: 10px; color: #64748b;">
+                  ⚪ Chờ KTV thẩm định
+                </div>
+              `;
+            }
+
+            card.innerHTML = `
+              <input type="checkbox" class="crop-select-checkbox" data-index="${idx}" onchange="toggleCropSelection(${idx}, this.checked)" onclick="event.stopPropagation();">
+              <img class="crop-img" src="${cropSrc}" alt="${c.class_name}" onclick="toggleCropCard(${idx})" style="cursor: pointer;">
+              <div class="crop-info" onclick="toggleCropCard(${idx})" style="cursor: pointer;">
+                <span class="${tagClass}">${c.class_vn}</span>
+                <span style="color: #94a3b8; font-size: 11px;">${Math.round(c.confidence * 100)}%</span>
+                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Giây thứ ${c.timestamp_s}s</div>
+                ${ktvTagBadgeHtml}
+              </div>
+            `;
+            grid.appendChild(card);
+          });
+          updateSelectionUI();
+        } else {
+          selBar.style.display = 'none';
+          grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 60px; color: #64748b;">Chưa có ảnh cắt khuyết tật.</div>';
+        }
+
+        // Table
+        const tbody = document.getElementById('dataTableBody');
+        const defects = data.all_defects || [];
+        if (defects.length > 0) {
+          tbody.innerHTML = '';
+          defects.forEach((d, i) => {
+            const tr = document.createElement('tr');
+            const tagClass = d.class_name === 'pothole' ? 'tag-pothole' : 'tag-crack';
+            tr.innerHTML = `
+              <td>${i + 1}</td>
+              <td>${d.timestamp_s}s</td>
+              <td><span class="${tagClass}">${d.class_vn}</span></td>
+              <td><strong>${Math.round(d.confidence * 100)}%</strong></td>
+              <td style="font-family: monospace; font-size: 12px;">[${d.box.join(', ')}]</td>
+            `;
+            tbody.appendChild(tr);
+          });
+          document.getElementById('exportBtns').style.display = 'flex';
+          document.getElementById('downloadJsonBtn').href = '/api/download/' + taskId + '/report.json';
+          document.getElementById('downloadGeoJsonBtn').href = '/api/download/' + taskId + '/layer.geojson';
+        }
+      } catch (err) {
+        console.error("Load results error:", err);
+      }
+    }
+
+    function showFrame(idx) {
+      if (!detectedFrames || detectedFrames.length === 0) return;
+      if (idx < 0) idx = 0;
+      if (idx >= detectedFrames.length) idx = detectedFrames.length - 1;
+      currentFrameIdx = idx;
+
+      const f = detectedFrames[idx];
+      const imgUrl = f.annotated_url || f.image_url || f.vis_url || '';
+      document.getElementById('mainViewerImg').src = imgUrl;
+      const titleInfo = f.original_name ? `${f.original_name}` : `Giây ${f.timestamp_s}s`;
+      document.getElementById('frameIndicator').innerText = `Khung hình: ${idx + 1} / ${detectedFrames.length} (${titleInfo})`;
+      
+      let statusTag = '';
+      if (f.has_defect !== undefined) {
+        statusTag = f.has_defect 
+          ? ' <span style="background: rgba(239,68,68,0.2); color: #ef4444; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px;">Có khuyết tật</span>'
+          : ' <span style="background: rgba(16,185,129,0.2); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px;">Mặt đường chuẩn</span>';
+      }
+      document.getElementById('frameDetails').innerHTML = 
+        `Phát hiện: <strong>${f.defects_count} khuyết tật</strong> (Ổ gà: ${f.pothole_count}, Vết nứt: ${f.crack_count})${statusTag}`;
+
+      const ovBtnBox = document.getElementById('overviewBtnContainer');
+      if (ovBtnBox) ovBtnBox.style.display = 'block';
+    }
+
+    function prevFrame() { showFrame(currentFrameIdx - 1); }
+    function nextFrame() { showFrame(currentFrameIdx + 1); }
+
+    // --- CURATION & SELECTION FUNCTIONS ---
+    function toggleCropSelection(idx, isChecked) {
+      if (isChecked) {
+        selectedCropIndices.add(idx);
+        document.getElementById(`cropCard_${idx}`)?.classList.add('selected');
+      } else {
+        selectedCropIndices.delete(idx);
+        document.getElementById(`cropCard_${idx}`)?.classList.remove('selected');
+      }
+      updateSelectionUI();
+    }
+
+    function toggleCropCard(idx) {
+      const chk = document.querySelector(`.crop-select-checkbox[data-index="${idx}"]`);
+      if (chk) {
+        chk.checked = !chk.checked;
+        toggleCropSelection(idx, chk.checked);
+      }
+    }
+
+    function toggleSelectAll(isChecked) {
+      selectedCropIndices.clear();
+      document.querySelectorAll('.crop-select-checkbox').forEach(chk => {
+        chk.checked = isChecked;
+        const idx = parseInt(chk.getAttribute('data-index'));
+        if (isChecked) {
+          selectedCropIndices.add(idx);
+          document.getElementById(`cropCard_${idx}`)?.classList.add('selected');
+        } else {
+          document.getElementById(`cropCard_${idx}`)?.classList.remove('selected');
+        }
+      });
+      updateSelectionUI();
+    }
+
+    function filterSelection(cls) {
+      selectedCropIndices.clear();
+      document.querySelectorAll('.crop-select-checkbox').forEach(chk => {
+        const idx = parseInt(chk.getAttribute('data-index'));
+        const item = allCrops[idx];
+        const match = (item && item.class_name === cls);
+        chk.checked = match;
+        if (match) {
+          selectedCropIndices.add(idx);
+          document.getElementById(`cropCard_${idx}`)?.classList.add('selected');
+        } else {
+          document.getElementById(`cropCard_${idx}`)?.classList.remove('selected');
+        }
+      });
+      updateSelectionUI();
+    }
+
+    function clearSelection() {
+      toggleSelectAll(false);
+      const chk = document.getElementById('selectAllCheckbox');
+      if (chk) chk.checked = false;
+    }
+
+    function updateSelectionUI() {
+      const count = selectedCropIndices.size;
+      document.getElementById('selectionSummary').innerText = `Đã chọn: ${count} / ${allCrops.length} mục`;
+      document.getElementById('btnCurateCount').innerText = count;
+      const btn = document.getElementById('btnCurate');
+      if (btn) btn.disabled = (count === 0);
+    }
+
+    async function runAiCuration() {
+      if (selectedCropIndices.size === 0) {
+        alert("Vui lòng tích chọn ít nhất 1 khuyết tật để sàng lọc!");
+        return;
+      }
+      const selectedItems = Array.from(selectedCropIndices).map(i => allCrops[i]);
+      await processCurationItems(selectedItems, `Đang thẩm định ${selectedItems.length} mục...`);
+    }
+
+    async function runAiCurationAll() {
+      if (!allCrops || allCrops.length === 0) {
+        alert("Chưa có ảnh cận cảnh nào để KTV thẩm định!");
+        return;
+      }
+      const reqCount = Math.ceil(allCrops.length / 100);
+      const confirmMsg = `Bạn sắp gửi toàn bộ ${allCrops.length} ảnh cận cảnh cho KTV AI (GPT-5.4 Vision).\n\n[Nhanh] TỐI ƯU HỆ THỐNG: Gom 100 ảnh / 1 Request API!\n• Tổng số request AI cần dùng: ${reqCount} Request.\n• Yêu cầu KTV phân loại chi tiết và khử trùng lặp đối tượng.\n\nBấm OK để bắt đầu thẩm định!`;
+      if (!confirm(confirmMsg)) return;
+
+      await processCurationItems(allCrops, `[Nhanh] Đang gọi KTV thẩm định toàn bộ ${allCrops.length} ảnh (${reqCount} Request API)...`);
+    }
+
+    async function runCrackAssessment() {
+      if (!allCrops || allCrops.length === 0) {
+        alert("Chưa có ảnh cận cảnh nào để phân tích vết nứt!");
+        return;
+      }
+
+      // Lọc các mục là vết nứt hoặc toàn bộ nếu chưa phân loại
+      let targetItems = allCrops;
+      if (selectedCropIndices.size > 0) {
+        targetItems = Array.from(selectedCropIndices).map(i => allCrops[i]);
+      } else {
+        const cracksOnly = allCrops.filter(c => c.class_name === 'crack');
+        if (cracksOnly.length > 0) targetItems = cracksOnly;
+      }
+
+      await processCurationItems(
+        targetItems, 
+        `[Mục tiêu] Đang phân tích & đánh giá chuyên sâu ${targetItems.length} vết nứt...`, 
+        '/api/curation/assess-cracks'
+      );
+    }
+
+    async function processCurationItems(itemsList, statusText, endpoint = '/api/curation/filter-and-tag') {
+      const btnSel = document.getElementById('btnCurate');
+      const btnAll = document.getElementById('btnCurateAll');
+      const btnCrack = document.getElementById('btnAssessCracks');
+      if (btnSel) btnSel.disabled = true;
+      if (btnAll) btnAll.disabled = true;
+      if (btnCrack) btnCrack.disabled = true;
+
+      const origTextSel = btnSel ? btnSel.innerHTML : '';
+      const origTextAll = btnAll ? btnAll.innerHTML : '';
+      if (btnAll) btnAll.innerText = "⏳ " + statusText;
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_id: currentTaskId,
+            items: itemsList,
+            batch_size: 100,
+            apply_dedup: true
+          })
+        });
+        const data = await res.json();
+        if (data.status === 'ERROR') {
+          alert("Lỗi: " + data.message);
+          return;
+        }
+
+        curatedResultsList = data.curated_items || [];
+        
+        // Mặc định hiển thị danh sách khuyết tật ĐỘC NHẤT (Khử trùng lặp)
+        renderCurationResults(curatedResultsList, 'unique');
+
+        // Chuyển sang Tab 3 (KTV Thẩm Định & Gắn Tag)
+        const curTabBtn = document.querySelector('button[onclick*="curationTab"]');
+        if (curTabBtn) switchTab('curationTab', curTabBtn);
+      } catch (err) {
+        alert("Lỗi khi gọi KTV thẩm định: " + err);
+      } finally {
+        if (btnSel) {
+          btnSel.disabled = (selectedCropIndices.size === 0);
+          btnSel.innerHTML = origTextSel;
+        }
+        if (btnAll) {
+          btnAll.disabled = false;
+          btnAll.innerHTML = `[Nhanh] KTV ĐỌC TOÀN BỘ (<span id="btnCurateAllCount">${allCrops.length}</span> ảnh • 100 ảnh / 1 req)`;
+        }
+        if (btnCrack) btnCrack.disabled = false;
+      }
+    }
+
+    let currentFilterMode = 'unique';
+
+    function filterCurationDisplay(mode) {
+      currentFilterMode = mode;
+      document.querySelectorAll('#curationActionBar .btn-sm').forEach(b => b.classList.remove('active'));
+      if (mode === 'all') document.getElementById('btnFilterCurAll')?.classList.add('active');
+      if (mode === 'unique') document.getElementById('btnFilterCurUnique')?.classList.add('active');
+      if (mode === 'crack') document.getElementById('btnFilterCurCracks')?.classList.add('active');
+      if (mode === 'pothole') document.getElementById('btnFilterCurPotholes')?.classList.add('active');
+      if (mode === 'false') document.getElementById('btnFilterCurFalse')?.classList.add('active');
+      if (mode === 'duplicate') document.getElementById('btnFilterCurDup')?.classList.add('active');
+
+      renderCurationResults(curatedResultsList, mode);
+    }
+
+    function switchCurationView(view) {
+      const grid = document.getElementById('curationGrid');
+      const tableBox = document.getElementById('ktvComparisonTableBox');
+      const btnCards = document.getElementById('btnViewModeCards');
+      const btnTable = document.getElementById('btnViewModeTable');
+
+      if (view === 'cards') {
+        if (grid) grid.style.display = 'grid';
+        if (tableBox) tableBox.style.display = 'none';
+        if (btnCards) { btnCards.style.background = '#0284c7'; btnCards.style.color = '#fff'; }
+        if (btnTable) { btnTable.style.background = '#1e293b'; btnTable.style.color = '#94a3b8'; }
+      } else {
+        if (grid) grid.style.display = 'none';
+        if (tableBox) tableBox.style.display = 'block';
+        if (btnTable) { btnTable.style.background = '#0284c7'; btnTable.style.color = '#fff'; }
+        if (btnCards) { btnCards.style.background = '#1e293b'; btnCards.style.color = '#94a3b8'; }
+      }
+    }
+
+    function filterBySpecificTag(tagName) {
+      filterCurationDisplay('tag:' + tagName);
+    }
+
+    function toggleDupViews(idx) {
+      const el = document.getElementById(`dupViews_${idx}`);
+      if (el) {
+        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'flex' : 'none';
+      }
+    }
+
+    function renderCurationResults(items, filterMode = currentFilterMode) {
+      if (!items) items = [];
+      document.getElementById('curatedCount').innerText = items.length;
+      document.getElementById('curationActionBar').style.display = 'flex';
+
+      // Tính toán số liệu thống kê chuẩn
+      const uniqueValidItems = items.filter(x => x.is_valid && x.status === 'VERIFIED' && !x.is_duplicate);
+      const dupCount = items.filter(x => x.is_duplicate).length;
+      const falseCount = items.filter(x => (!x.is_valid || x.status !== 'VERIFIED') && !x.is_duplicate).length;
+      const crackCount = uniqueValidItems.filter(x => (x.class_name === 'crack' || (x.fine_tag_code && x.fine_tag_code.includes('crack')))).length;
+      const potholeCount = uniqueValidItems.filter(x => (x.class_name === 'pothole' || (x.fine_tag_code && x.fine_tag_code.includes('pothole')))).length;
+
+      document.getElementById('curCountAnalyzed').innerText = items.length;
+      document.getElementById('curCountUnique').innerText = uniqueValidItems.length;
+      document.getElementById('curCountFalse').innerText = falseCount;
+      document.getElementById('curCountDup').innerText = dupCount;
+
+      document.getElementById('curCountAll').innerText = items.length;
+      document.getElementById('curCountUniqueBtn').innerText = uniqueValidItems.length;
+      document.getElementById('curCountCrackBtn').innerText = crackCount;
+      document.getElementById('curCountPotholeBtn').innerText = potholeCount;
+      document.getElementById('curCountFalseBtn').innerText = falseCount;
+      document.getElementById('curCountDupBtn').innerText = dupCount;
+
+      // Cập nhật Dashboard Đánh Giá Hiệu Quả KTV AI
+      const totalAnalyzed = items.length;
+      const validCount = uniqueValidItems.length;
+      const precPct = totalAnalyzed > 0 ? Math.round((validCount / totalAnalyzed) * 100) : 0;
+      const suppPct = totalAnalyzed > 0 ? Math.round((falseCount / totalAnalyzed) * 100) : 0;
+      const relabelCount = items.filter(x => x.fine_tag && !x.fine_tag.toLowerCase().includes('báo động')).length;
+      const relabelPct = totalAnalyzed > 0 ? Math.round((relabelCount / totalAnalyzed) * 100) : 0;
+      const dedupPct = totalAnalyzed > 0 ? Math.round((dupCount / totalAnalyzed) * 100) : 0;
+
+      const elDash = document.getElementById('ktvEvaluationDashboard');
+      if (elDash && totalAnalyzed > 0) {
+        elDash.style.display = 'block';
+        document.getElementById('ktvMetricPrecision').innerText = precPct + '%';
+        document.getElementById('ktvMetricPrecisionSub').innerText = validCount + ' khuyết tật chuẩn kết cấu';
+        document.getElementById('ktvMetricSuppression').innerText = suppPct + '%';
+        document.getElementById('ktvMetricSuppressionSub').innerText = falseCount + ' mẫu báo động giả loại bỏ';
+        document.getElementById('ktvMetricRelabel').innerText = relabelPct + '%';
+        document.getElementById('ktvMetricRelabelSub').innerText = relabelCount + ' phân loại chi tiết (fine-tags)';
+        document.getElementById('ktvMetricDedup').innerText = dedupPct + '%';
+        document.getElementById('ktvMetricDedupSub').innerText = dupCount + ' góc chụp trùng đã gộp';
+
+        // Render dynamic tag filter chips
+        const tagCounts = {};
+        items.forEach(x => {
+          const t = x.fine_tag || 'Khác';
+          tagCounts[t] = (tagCounts[t] || 0) + 1;
+        });
+
+        const chipContainer = document.getElementById('ktvTagChipsContainer');
+        if (chipContainer) {
+          chipContainer.innerHTML = '';
+          const allBtn = document.createElement('button');
+          allBtn.className = 'btn-sm' + (filterMode === 'all' || filterMode === 'unique' ? ' active' : '');
+          allBtn.style.cssText = 'background: #0284c7; color: #fff; font-weight: 600; font-size: 11px; padding: 4px 10px; border-radius: 4px;';
+          allBtn.innerText = `Toàn bộ (${totalAnalyzed})`;
+          allBtn.onclick = () => filterCurationDisplay('all');
+          chipContainer.appendChild(allBtn);
+
+          Object.keys(tagCounts).sort((a,b) => tagCounts[b] - tagCounts[a]).forEach(tag => {
+            const count = tagCounts[tag];
+            const isFalse = tag.toLowerCase().includes('báo động');
+            const chip = document.createElement('button');
+            const isActive = filterMode === 'tag:' + tag;
+            chip.className = 'btn-sm' + (isActive ? ' active' : '');
+            chip.style.cssText = `background: ${isFalse ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)'}; color: ${isFalse ? '#fca5a5' : '#6ee7b7'}; border: 1px solid ${isFalse ? '#ef4444' : '#10b981'}; font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer;`;
+            chip.innerText = `${isFalse ? '⚠️' : '✅'} ${tag} (${count})`;
+            chip.onclick = () => filterBySpecificTag(tag);
+            chipContainer.appendChild(chip);
+          });
+        }
+
+        // Render Bảng Ma Trận Đối Chiếu YOLO vs KTV
+        const compTbody = document.getElementById('ktvComparisonTableBody');
+        if (compTbody) {
+          compTbody.innerHTML = '';
+          items.forEach((it, i) => {
+            const tr = document.createElement('tr');
+            const isVal = it.is_valid && it.status === 'VERIFIED';
+            const yoloCls = it.class_vn || (it.class_name === 'pothole' ? 'Ổ gà' : 'Vết nứt');
+            const tagCol = isVal ? '#34d399' : '#fb923c';
+            tr.innerHTML = `
+              <td>${i + 1}</td>
+              <td style="font-weight: 700; color: #38bdf8;">${it.defect_id || ('DEF_' + (i+1))}</td>
+              <td><img src="${it.url || it.crop_url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #000; cursor: pointer;" onclick="window.open('${it.url || it.crop_url}', '_blank')"></td>
+              <td><strong>${yoloCls}</strong> (${Math.round((it.confidence || 0.5) * 100)}%)</td>
+              <td><span style="color: ${tagCol}; font-weight: 700;">${isVal ? '✅' : '⚠️'} ${it.fine_tag}</span></td>
+              <td><span class="badge-severity sev-${(it.severity || 'LOW').toLowerCase()}">${it.severity}</span></td>
+              <td style="font-size: 11px; color: #cbd5e1;">${it.reasoning || ''} ${it.recommendation ? `<br><strong style="color: #38bdf8;">[Công cụ] Giải pháp:</strong> ${it.recommendation}` : ''}</td>
+            `;
+            compTbody.appendChild(tr);
+          });
+        }
+      }
+
+      // Lọc danh sách theo chế độ xem
+      let displayItems = items;
+      if (filterMode === 'unique') {
+        displayItems = uniqueValidItems;
+      } else if (filterMode === 'crack') {
+        displayItems = uniqueValidItems.filter(x => x.class_name === 'crack' || (x.fine_tag_code && x.fine_tag_code.includes('crack')));
+      } else if (filterMode === 'pothole') {
+        displayItems = uniqueValidItems.filter(x => x.class_name === 'pothole' || (x.fine_tag_code && x.fine_tag_code.includes('pothole')));
+      } else if (filterMode === 'false') {
+        displayItems = items.filter(x => (!x.is_valid || x.status !== 'VERIFIED') && !x.is_duplicate);
+      } else if (filterMode === 'duplicate') {
+        displayItems = items.filter(x => x.is_duplicate);
+      } else if (filterMode.startsWith('tag:')) {
+        const targetTag = filterMode.substring(4);
+        displayItems = items.filter(x => x.fine_tag === targetTag);
+      }
+
+      const grid = document.getElementById('curationGrid');
+      grid.innerHTML = '';
+
+      if (displayItems.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b;">Không có mục nào phù hợp với bộ lọc đã chọn.</div>';
+        return;
+      }
+
+      displayItems.forEach((it) => {
+        const realIdx = curatedResultsList.indexOf(it);
+        const card = document.createElement('div');
+        card.className = 'curation-card';
+        card.id = `curCard_${realIdx}`;
+        
+        const isValid = it.is_valid && it.status === 'VERIFIED';
+        const isCrack = (it.class_name === 'crack' || (it.fine_tag_code && it.fine_tag_code.includes('crack')));
+        
+        const badgeHtml = isValid 
+          ? `<span class="badge-verified">✅ ${it.fine_tag}</span>`
+          : `<span class="badge-false">⚠️ ${it.fine_tag}</span>`;
+        
+        const dupBadge = it.is_duplicate 
+          ? `<span style="background: #0284c7; color: #e0f2fe; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">[Trùng lặp] Góc trùng đã gộp</span>` 
+          : '';
+
+        const userEditedBadge = it.user_edited 
+          ? `<span style="background: #047857; color: #a7f3d0; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #10b981;">[Sửa] Kỹ sư đã hiệu chỉnh</span>` 
+          : '';
+
+        let sevClass = 'sev-low';
+        if (it.severity === 'CRITICAL') sevClass = 'sev-critical';
+        else if (it.severity === 'MEDIUM') sevClass = 'sev-medium';
+
+        // Khối đánh giá vết nứt chuyên sâu
+        let crackDetailsHtml = '';
+        if (isValid && isCrack) {
+          const widthBadge = it.crack_width_level 
+            ? `<span style="background: #4c1d95; color: #ddd6fe; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600;">[Đo đạc] Độ mở: ${it.crack_width_level}</span>` 
+            : '';
+          const angleBadge = it.dominant_angle_deg 
+            ? `<span style="background: #1e293b; color: #94a3b8; padding: 2px 6px; border-radius: 3px; font-size: 10px;">[Kích thước] Góc: ${it.dominant_angle_deg}°</span>` 
+            : '';
+          const densityBadge = it.crack_density_pct 
+            ? `<span style="background: #1e293b; color: #94a3b8; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Mật độ: ${it.crack_density_pct}%</span>` 
+            : '';
+
+          crackDetailsHtml = `
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+              ${widthBadge} ${angleBadge} ${densityBadge}
+            </div>
+            ${it.structural_risk || it.recommendation ? `
+              <div style="background: #082f49; border-left: 3px solid #38bdf8; padding: 5px 8px; border-radius: 4px; font-size: 11px; color: #bae6fd; margin-top: 5px;">
+                ${it.structural_risk ? `<div><strong>[Nhanh] Nguy cơ:</strong> ${it.structural_risk}</div>` : ''}
+                ${it.recommendation ? `<div style="margin-top: 2px;"><strong>[Công cụ] Khuyến nghị:</strong> ${it.recommendation}</div>` : ''}
+              </div>
+            ` : ''}
+          `;
+        }
+
+        // Khối hiển thị góc chụp trùng lặp đã gộp (nếu có)
+        let dupGalleryHtml = '';
+        if (it.duplicate_views && it.duplicate_views.length > 0) {
+          dupGalleryHtml = `
+            <div style="margin-top: 6px; font-size: 11px; color: #38bdf8; cursor: pointer; text-decoration: underline;" onclick="toggleDupViews(${realIdx})">
+              [Ảnh] Có ${it.duplicate_views.length} góc chụp khác đã gộp (Bấm xem/ẩn)
+            </div>
+            <div id="dupViews_${realIdx}" style="display: none; gap: 6px; margin-top: 6px; overflow-x: auto; padding: 4px; background: #0b1329; border-radius: 4px;">
+              ${it.duplicate_views.map(v => `
+                <div style="text-align: center; font-size: 10px; color: #94a3b8;">
+                  <img src="${v.url}" title="Frame ${v.frame_index} (${v.timestamp_s}s)" style="width: 55px; height: 55px; object-fit: cover; border-radius: 4px; border: 1px solid #0284c7; background: #000;">
+                  <div>${v.timestamp_s}s</div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        if (it.edit_mode) {
+          // GIAO DIỆN CHỈNH SỬA NHẬN ĐỊNH CỦA KTV (HUMAN-IN-THE-LOOP)
+          card.style.border = '2px solid #38bdf8';
+          card.style.background = '#0f172a';
+          card.innerHTML = `
+            <div style="display: flex; gap: 10px;">
+              <img src="${it.url || it.crop_url}" style="width: 85px; height: 85px; object-fit: cover; border-radius: 4px; background: #000;">
+              <div style="flex: 1; font-size: 12px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="font-weight: bold; color: #38bdf8;">[Sửa] CHỈNH SỬA ĐÁNH GIÁ CỦA KTV (MỤC #${realIdx + 1})</div>
+                
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <label style="margin: 0; font-size: 11px;">Trạng thái:</label>
+                  <select id="editValid_${realIdx}" style="padding: 2px 6px; font-size: 11px; background: #1e293b; color: #fff; border: 1px solid #475569; border-radius: 4px;">
+                    <option value="true" ${isValid ? 'selected' : ''}>✅ Khuyết tật hợp lệ</option>
+                    <option value="false" ${!isValid ? 'selected' : ''}>⚠️ Báo động giả / Bỏ qua</option>
+                  </select>
+
+                  <label style="margin: 0; font-size: 11px; margin-left: 6px;">Mức độ:</label>
+                  <select id="editSev_${realIdx}" style="padding: 2px 6px; font-size: 11px; background: #1e293b; color: #fff; border: 1px solid #475569; border-radius: 4px;">
+                    <option value="CRITICAL" ${it.severity === 'CRITICAL' ? 'selected' : ''}>[Khẩn] CRITICAL (Rất nghiêm trọng)</option>
+                    <option value="MEDIUM" ${it.severity === 'MEDIUM' ? 'selected' : ''}>[Cảnh báo] MEDIUM (Trung bình)</option>
+                    <option value="LOW" ${it.severity === 'LOW' ? 'selected' : ''}>[Bình thường] LOW (Nhẹ)</option>
+                    <option value="NONE" ${it.severity === 'NONE' ? 'selected' : ''}>⚪ NONE (Báo động giả)</option>
+                  </select>
+                </div>
+
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <label style="margin: 0; font-size: 11px;">Độ mở vết nứt:</label>
+                  <select id="editWidth_${realIdx}" style="padding: 2px 6px; font-size: 11px; background: #1e293b; color: #fff; border: 1px solid #475569; border-radius: 4px;">
+                    <option value="< 3mm (Nhỏ / Nứt tóc)" ${(it.crack_width_level || '').includes('< 3') ? 'selected' : ''}>< 3mm (Nhỏ / Nứt tóc)</option>
+                    <option value="3 - 6mm (Trung bình)" ${(it.crack_width_level || '').includes('3 - 6') ? 'selected' : ''}>3 - 6mm (Trung bình)</option>
+                    <option value="> 6mm (Rộng / Nguy hiểm)" ${(it.crack_width_level || '').includes('> 6') ? 'selected' : ''}>> 6mm (Rộng / Nguy hiểm)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 6px;">
+              <label style="font-size: 11px; color: #94a3b8; font-weight: 600;">Phân loại khuyết tật chi tiết (Fine Tag):</label>
+              <select id="editTag_${realIdx}" style="width: 100%; margin-top: 2px; padding: 4px; font-size: 11px; background: #1e293b; color: #fff; border: 1px solid #475569; border-radius: 4px;">
+                <option value="Vết nứt dọc tuyến" ${it.fine_tag.includes('dọc') ? 'selected' : ''}>Vết nứt dọc tuyến (crack_longitudinal)</option>
+                <option value="Vết nứt ngang tuyến" ${it.fine_tag.includes('ngang') ? 'selected' : ''}>Vết nứt ngang tuyến (crack_transverse)</option>
+                <option value="Vết nứt chân chim / nứt lưới" ${it.fine_tag.includes('chân chim') || it.fine_tag.includes('lưới') ? 'selected' : ''}>Vết nứt chân chim / nứt lưới mai rùa (crack_alligator)</option>
+                <option value="Vết nứt mép đường / vai đường" ${it.fine_tag.includes('mép') || it.fine_tag.includes('vai') ? 'selected' : ''}>Vết nứt mép đường / vai đường (crack_edge)</option>
+                <option value="Vết nứt khối / bàn cờ" ${it.fine_tag.includes('khối') || it.fine_tag.includes('bàn cờ') ? 'selected' : ''}>Vết nứt khối / ô bàn cờ (crack_block)</option>
+                <option value="Ổ gà nông (< 3cm)" ${it.fine_tag.includes('nông') ? 'selected' : ''}>Ổ gà nông (< 3cm) (pothole_shallow)</option>
+                <option value="Ổ gà sâu / đọng nước" ${it.fine_tag.includes('đọng nước') ? 'selected' : ''}>Ổ gà sâu / đọng nước (pothole_deep_water)</option>
+                <option value="Ổ gà sâu (> 5cm)" ${it.fine_tag.includes('> 5cm') || it.fine_tag.includes('sâu') ? 'selected' : ''}>Ổ gà sâu (> 5cm) (pothole_deep)</option>
+                <option value="Báo động giả (Đèn đường / nắp cống / rãnh / bậc thềm)" ${it.fine_tag.includes('Đèn') || it.fine_tag.includes('Vật thể') || it.fine_tag.includes('cống') ? 'selected' : ''}>Báo động giả (Đèn đường / Nắp cống / Bậc thềm) (false_alarm_object)</option>
+                <option value="Báo động giả (Bóng râm / bóng cây)" ${it.fine_tag.includes('Bóng') ? 'selected' : ''}>Báo động giả (Bóng râm / bóng cây) (false_alarm_shadow)</option>
+                <option value="Báo động giả (Vệt sơn / rác / vệt dầu)" ${it.fine_tag.includes('vệt') || it.fine_tag.includes('rác') ? 'selected' : ''}>Báo động giả (Vệt sơn / rác / vệt dầu) (false_alarm_debris)</option>
+              </select>
+            </div>
+
+            <div style="margin-top: 6px;">
+              <label style="font-size: 11px; color: #94a3b8; font-weight: 600;">Nội dung nhận định / Lập luận chuyên gia của KTV:</label>
+              <textarea id="editReason_${realIdx}" rows="2" style="width: 100%; margin-top: 2px; padding: 6px; font-size: 11px; background: #1e293b; color: #cbd5e1; border: 1px solid #475569; border-radius: 4px; resize: vertical;">${it.reasoning || ''}</textarea>
+            </div>
+
+            <div style="margin-top: 6px;">
+              <label style="font-size: 11px; color: #94a3b8; font-weight: 600;">Khuyến nghị giải pháp kỹ thuật:</label>
+              <input type="text" id="editRecom_${realIdx}" value="${it.recommendation || ''}" style="width: 100%; margin-top: 2px; padding: 4px 6px; font-size: 11px; background: #1e293b; color: #cbd5e1; border: 1px solid #475569; border-radius: 4px;" placeholder="Ví dụ: Trám khe nứt bitum nóng">
+            </div>
+
+            <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+              <input type="checkbox" id="editDup_${realIdx}" ${it.is_duplicate ? 'checked' : ''} style="width: auto;">
+              <label for="editDup_${realIdx}" style="margin: 0; font-size: 11px; color: #94a3b8; cursor: pointer;">
+                Đánh dấu là ảnh trùng lặp của khuyết tật khác (không tính vào danh sách độc nhất)
+              </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px;">
+              <button class="btn-sm" onclick="cancelEditCurationItem(${realIdx})">❌ Hủy</button>
+              <button class="btn-sm" style="background: #10b981; color: #fff; font-weight: 600;" onclick="saveCurationItemEdit(${realIdx})">[Lưu trữ] Lưu chỉnh sửa</button>
+            </div>
+          `;
+        } else {
+          // GIAO DIỆN HIỂN THỊ CHUẨN
+          const dualViewImagesHtml = it.overview_frame_url 
+            ? `
+              <div style="display: flex; gap: 8px; flex-direction: column; align-items: center;">
+                <div style="position: relative; text-align: center;">
+                  <span style="font-size: 9px; color: #38bdf8; font-weight: bold; display: block; margin-bottom: 2px;">[Ảnh] Khung Toàn Cảnh</span>
+                  <img src="${it.overview_frame_url}" title="Bấm để phóng to khung hình tổng thể" style="width: 120px; height: 75px; object-fit: cover; border-radius: 4px; border: 1px solid #38bdf8; background: #000; cursor: pointer;" onclick="window.open('${it.overview_frame_url}', '_blank')">
+                </div>
+                <div style="position: relative; text-align: center;">
+                  <span style="font-size: 9px; color: #f59e0b; font-weight: bold; display: block; margin-bottom: 2px;">[Chi tiết] Cận Cảnh Crop</span>
+                  <img src="${it.url || it.crop_url}" title="Ảnh cắt cận cảnh khuyết tật" style="width: 120px; height: 75px; object-fit: cover; border-radius: 4px; border: 1px solid #f59e0b; background: #000; cursor: pointer;" onclick="window.open('${it.url || it.crop_url}', '_blank')">
+                </div>
+              </div>
+            `
+            : `<img src="${it.url || it.crop_url}" style="width: 90px; height: 90px; object-fit: cover; border-radius: 4px; background: #000; cursor: pointer;" onclick="window.open('${it.url || it.crop_url}', '_blank')">`;
+
+          card.innerHTML = `
+            <div style="display: flex; gap: 10px;">
+              ${dualViewImagesHtml}
+              <div style="flex: 1; font-size: 12px;">
+                <div style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+                  <div>${badgeHtml} ${dupBadge} ${userEditedBadge}</div>
+                  <button class="btn-sm" style="padding: 2px 6px; font-size: 10px;" onclick="enableEditCurationItem(${realIdx})">[Sửa] Sửa nhận định KTV</button>
+                </div>
+                <div style="margin-bottom: 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                  <span class="badge-severity ${sevClass}">Mức độ: ${it.severity}</span>
+                  <span style="color: #94a3b8; font-size: 11px;">Độ tin cậy: ${Math.round((it.confidence_verified || it.confidence || 0.8) * 100)}%</span>
+                  ${it.inspector ? `<span style="font-size: 10px; color: #38bdf8; background: #0c4a6e; padding: 1px 6px; border-radius: 3px; font-weight: 600;">[KTV AI] ${it.inspector}</span>` : ''}
+                </div>
+                <div style="color: #64748b; font-size: 11px;">Giây thứ ${it.timestamp_s}s • Khung #${it.frame_index || 0} • Box: [${(it.box || []).join(', ')}]</div>
+                ${crackDetailsHtml}
+                ${dupGalleryHtml}
+              </div>
+            </div>
+            <div style="background: #1e293b; padding: 6px 10px; border-radius: 4px; font-size: 11px; color: #cbd5e1; border-left: 3px solid ${isValid ? '#10b981' : '#f59e0b'}; margin-top: 4px;">
+              <strong>[Ghi chú] Nhận định KTV:</strong> ${it.reasoning}
+            </div>
+          `;
+        }
+
+        grid.appendChild(card);
+      });
+    }
+
+    function enableEditCurationItem(idx) {
+      if (curatedResultsList[idx]) {
+        curatedResultsList[idx].edit_mode = true;
+        renderCurationResults(curatedResultsList);
+      }
+    }
+
+    function cancelEditCurationItem(idx) {
+      if (curatedResultsList[idx]) {
+        curatedResultsList[idx].edit_mode = false;
+        renderCurationResults(curatedResultsList);
+      }
+    }
+
+    async function saveCurationItemEdit(idx) {
+      const it = curatedResultsList[idx];
+      if (!it) return;
+
+      const isValidVal = document.getElementById(`editValid_${idx}`).value === 'true';
+      const sevVal = document.getElementById(`editSev_${idx}`).value;
+      const tagVal = document.getElementById(`editTag_${idx}`).value;
+      const widthVal = document.getElementById(`editWidth_${idx}`) ? document.getElementById(`editWidth_${idx}`).value : it.crack_width_level;
+      const reasonVal = document.getElementById(`editReason_${idx}`).value.trim();
+      const recomVal = document.getElementById(`editRecom_${idx}`) ? document.getElementById(`editRecom_${idx}`).value.trim() : it.recommendation;
+      const dupVal = document.getElementById(`editDup_${idx}`) ? document.getElementById(`editDup_${idx}`).checked : it.is_duplicate;
+
+      it.is_valid = isValidVal;
+      it.status = isValidVal ? 'VERIFIED' : 'FALSE_ALARM';
+      it.tag_category = isValidVal ? 'positive_defect' : 'hard_negative';
+      it.severity = sevVal;
+      it.fine_tag = tagVal;
+      it.crack_width_level = widthVal;
+      it.reasoning = reasonVal || 'Kỹ sư đã cập nhật thủ công.';
+      it.recommendation = recomVal;
+      it.is_duplicate = dupVal;
+      it.user_edited = true;
+      it.edit_mode = false;
+
+      // Cập nhật YOLO class ID tương ứng
+      if (!isValidVal) {
+        it.yolo_class_id = -1;
+      } else if (tagVal.includes('Ổ gà') || tagVal.includes('pothole')) {
+        it.yolo_class_id = 0;
+        it.class_name = 'pothole';
+      } else {
+        it.yolo_class_id = 1;
+        it.class_name = 'crack';
+      }
+
+      // Lưu lại thay đổi lên máy chủ
+      try {
+        await fetch('/api/curation/update-item', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_id: currentTaskId,
+            item_index: idx,
+            updated_item: it
+          })
+        });
+      } catch (err) {
+        console.warn("Không thể lưu cập nhật lên server:", err);
+      }
+
+      renderCurationResults(curatedResultsList);
+    }
+
+    async function exportDatasetZip() {
+      if (!curatedResultsList || curatedResultsList.length === 0) {
+        alert("Chưa có danh sách mẫu đã thẩm định!");
+        return;
+      }
+      const btn = document.getElementById('btnExportDataset');
+      btn.disabled = true;
+      btn.innerText = "⏳ Đang đóng gói YOLO Dataset & nén ZIP...";
+
+      try {
+        const res = await fetch('/api/curation/export-dataset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_id: currentTaskId,
+            curated_items: curatedResultsList,
+            export_unique_only: true
+          })
+        });
+        const data = await res.json();
+        if (data.status === 'SUCCESS') {
+          window.location.href = data.download_url;
+          alert(` ĐÃ ĐÓNG GÓI DATASET THÀNH CÔNG!\n\n• File ZIP: ${data.zip_filename} (${data.zip_size_mb} MB)\n• Lưu tại: ${data.summary.target_dir}\n• Ổ gà hợp lệ: ${data.summary.pothole_count}\n• Vết nứt hợp lệ: ${data.summary.crack_count}\n• Mẫu báo động giả (Hard Negatives): ${data.summary.hard_negatives_count}\n• Đã tự động loại bỏ các góc chụp trùng lặp!\n\nTrình duyệt đang tự động tải file zip về máy.`);
+        } else {
+          alert("Lỗi khi đóng gói dataset!");
+        }
+      } catch (err) {
+        alert("Lỗi khi kết xuất dataset: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "[Gói] ĐÓNG GÓI DATASET CHUẨN YOLO (.ZIP)";
+      }
+    }
+
+    async function inspectCurrentOverviewFrame() {
+      if (!detectedFrames || detectedFrames.length === 0) {
+        alert("Chưa có khung hình nào để KTV thẩm định bối cảnh!");
+        return;
+      }
+      const curFrame = detectedFrames[currentFrameIdx];
+      if (!curFrame) return;
+
+      const fIdx = curFrame.frame_index;
+      const btn = document.getElementById('btnInspectOverviewFrame');
+      const resBox = document.getElementById('overviewInspectionResult');
+      const resContent = document.getElementById('overviewInspectionContent');
+
+      if (btn) btn.disabled = true;
+      if (btn) btn.innerHTML = `⏳ KTV AI GPT-5.4 Vision đang đọc toàn cảnh khung hình #${fIdx}...`;
+
+      try {
+        const res = await fetch('/api/curation/inspect-overview-context', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_id: currentTaskId,
+            frame_index: fIdx,
+            items: allCrops.filter(c => c.frame_index === fIdx)
+          })
+        });
+        const data = await res.json();
+        if (data.status === 'ERROR' || !res.ok) {
+          alert("Lỗi thẩm định bối cảnh: " + (data.detail || data.message || "Thất bại"));
+          return;
+        }
+
+        const items = data.curated_items || [];
+        if (resBox && resContent) {
+          resBox.style.display = 'block';
+          if (items.length === 0) {
+            resContent.innerHTML = `<div style="color: #64748b;">KTV AI đã quét khung hình #${fIdx} (Mặt đường bình thường, không tìm thấy khuyết tật nguy hiểm).</div>`;
+          } else {
+            let html = `<div style="margin-bottom: 8px; color: #6ee7b7; font-weight: 600;">✅ Đã thẩm định Toàn cảnh + Cận cảnh cho ${items.length} đối tượng trong khung hình #${fIdx}:</div>`;
+            items.forEach((it, i) => {
+              html += `
+                <div style="background: #1e293b; border-left: 3px solid #38bdf8; padding: 8px 10px; border-radius: 4px; margin-bottom: 6px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: #f8fafc;">#${i + 1} ${it.fine_tag} [ID: ${it.defect_id || 'N/A'}]</strong>
+                    <span class="badge-severity sev-${(it.severity || 'LOW').toLowerCase()}">${it.severity}</span>
+                  </div>
+                  <div style="color: #94a3b8; font-size: 11px; margin-top: 2px;">
+                    <strong>[Ghi chú] Nhận định Bối cảnh:</strong> ${it.reasoning}
+                  </div>
+                  ${it.recommendation ? `<div style="color: #38bdf8; font-size: 11px; margin-top: 2px;"><strong>[Công cụ] Giải pháp:</strong> ${it.recommendation}</div>` : ''}
+                </div>
+              `;
+            });
+            resContent.innerHTML = html;
+          }
+        }
+
+        if (items.length > 0) {
+          items.forEach(newItem => {
+            const existingIdx = curatedResultsList.findIndex(x => x.crop_id === newItem.crop_id || (x.frame_index === newItem.frame_index && JSON.stringify(x.box) === JSON.stringify(newItem.box)));
+            if (existingIdx >= 0) {
+              curatedResultsList[existingIdx] = newItem;
+            } else {
+              curatedResultsList.push(newItem);
+            }
+          });
+          renderCurationResults(curatedResultsList);
+        }
+
+      } catch (err) {
+        alert("Lỗi khi kết nối KTV AI: " + err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '[Xem] KTV AI ĐỌC TOÀN CẢNH KHUNG HÌNH NÀY (Dual-View Context)';
+        }
+      }
+    }
+
+    async function runOverviewContextCurationAll(autoMode = false) {
+      if (!allCrops || allCrops.length === 0) {
+        if (!autoMode) alert("Chưa có dữ liệu khung hình / ảnh cận cảnh nào!");
+        return;
+      }
+
+      if (!autoMode) {
+        const confirmMsg = `Bạn sắp gọi KTV AI (GPT-5.4 Vision) để đọc TOÀN CẢNH KHUNG HÌNH CHƯA CẮT (Uncropped Overview Frames).\n\n[Xem] DUAL-VIEW CONTEXT AI:\n• AI sẽ xem ảnh tổng thể (Bao quát toàn tuyến đường + neon bounding box) kết hợp với các ảnh cận cảnh crop.\n• Tự động đánh giá bối cảnh rộng, phân loại chi tiết và gộp vết nứt trùng lặp.\n\nBấm OK để bắt đầu thẩm định toàn cảnh!`;
+        if (!confirm(confirmMsg)) return;
+      }
+
+      const btnAll = document.getElementById('btnInspectOverviewAll');
+      if (btnAll) {
+        btnAll.disabled = true;
+        btnAll.innerHTML = "⏳ KTV AI đang đọc các khung hình tổng thể (Dual-View)...";
+      }
+
+      try {
+        const res = await fetch('/api/curation/inspect-overview-context', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_id: currentTaskId,
+            items: allCrops,
+            batch_size: 6
+          })
+        });
+        const data = await res.json();
+        if (data.status === 'ERROR' || !res.ok) {
+          if (!autoMode) alert("Lỗi thẩm định bối cảnh: " + (data.detail || data.message || "Thất bại"));
+          return;
+        }
+
+        curatedResultsList = data.curated_items || [];
+        renderCurationResults(curatedResultsList, 'unique');
+
+        // Cập nhật lại các thẻ crop trên Tab 2 để hiện badge KTV ngay lập tức
+        if (allCrops.length > 0) {
+          allCrops.forEach((c, idx) => {
+            const cropSrc = c.url || c.crop_url || '';
+            const matchingCur = curatedResultsList.find(x => 
+              (x.url && (x.url === cropSrc || x.url.endsWith(c.crop_file || ''))) || 
+              (x.crop_url && (x.crop_url === cropSrc || x.crop_url.endsWith(c.crop_file || ''))) ||
+              (x.frame_index === c.frame_index && JSON.stringify(x.box) === JSON.stringify(c.box))
+            );
+            if (matchingCur) {
+              const card = document.getElementById(`cropCard_${idx}`);
+              if (card) {
+                const isVal = matchingCur.is_valid && matchingCur.status === 'VERIFIED';
+                const borderCol = isVal ? '#10b981' : '#f59e0b';
+                const textCol = isVal ? '#34d399' : '#fb923c';
+                const infoDiv = card.querySelector('.crop-info');
+                if (infoDiv) {
+                  let badgeDiv = infoDiv.querySelector('.ktv-badge-rendered');
+                  if (!badgeDiv) {
+                    badgeDiv = document.createElement('div');
+                    badgeDiv.className = 'ktv-badge-rendered';
+                    infoDiv.appendChild(badgeDiv);
+                  }
+                  badgeDiv.style.cssText = `margin-top: 4px; padding: 3px 5px; background: rgba(15, 23, 42, 0.95); border: 1px solid ${borderCol}; border-radius: 4px; text-align: left;`;
+                  badgeDiv.innerHTML = `
+                    <div style="color: ${textCol}; font-weight: 700; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      ${isVal ? '✅' : '⚠️'} ${matchingCur.fine_tag}
+                    </div>
+                    <div style="color: #94a3b8; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;" title="${matchingCur.reasoning}">
+                      [Ghi chú] ${matchingCur.reasoning}
+                    </div>
+                  `;
+                }
+              }
+            }
+          });
+        }
+
+        const curTabBtn = document.querySelector('button[onclick*="curationTab"]');
+        if (curTabBtn) switchTab('curationTab', curTabBtn);
+
+        if (!autoMode) {
+          alert(` ĐÃ THẨM ĐỊNH XONG BỐI CẢNH TOÀN CẢNH CHO ${data.frames_processed || 0} KHUNG HÌNH TỔNG THỂ!\n\n• Số khuyết tật độc nhất: ${data.unique_count || 0}\n• Số góc lặp trùng được gộp: ${data.duplicate_count || 0}`);
+        }
+      } catch (err) {
+        if (!autoMode) alert("Lỗi khi thẩm định toàn cảnh: " + err);
+      } finally {
+        if (btnAll) {
+          btnAll.disabled = false;
+          btnAll.innerHTML = '[Xem] KTV ĐỌC KHUNG TỔNG THỂ (Dual-View Context)';
+        }
+      }
+    }
+
+    window.onload = initPage;
+  </script>
+</body>
+</html>

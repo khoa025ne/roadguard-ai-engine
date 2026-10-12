@@ -1,32 +1,22 @@
-# Python
+# Python & Bytecode
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+*.cache
+*.tmp
+*.temp
+
+# Virtual Environment & Secrets
 env/
 venv/
 ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environment
+.venv/
 .env
-.venv
-venv/
+.env*
+*.key
+secrets/
 
 # IDE & Editor
 .vscode/
@@ -34,13 +24,9 @@ venv/
 *.swp
 *.swo
 
-# Ultralytics & YOLO training outputs
-runs/
-*.log
-wandb/
-
 # Datasets & Large Data (Keep repository lightweight)
 data/
+!data/.gitkeep
 archive/
 *.zip
 *.tar.gz
@@ -50,12 +36,23 @@ archive/
 *.MOV
 *.avi
 
-# Generated Results & Temporary Files
-results/
+# Reparse Points / Junctions / Artifacts
+merged/
+_trash*/
 scratch/
 .system_generated/
 
-# Keep base model weight (5.4MB) but ignore heavy trained models
-weights/trained/
+# Outputs, Runs & Predictions
+runs/
+results/
+outputs/
+*.log
+wandb/
+
+# Model weights
+weights/
+*.pt
+*.pth
 *.onnx
 *.engine
+*.tflite
