@@ -94,3 +94,16 @@ Kiểm thử tự động qua TestClient FastAPI:
 - [src/api/web/static/css/components.css](file:///f:/train%20AI%20đồ%20án/src/api/web/static/css/components.css): Toàn bộ component và 8 states tương tác.
 - [src/api/web/static/js/api_client.js](file:///f:/train%20AI%20đồ%20án/src/api/web/static/js/api_client.js): OpenAPI client hỗ trợ cấu hình động.
 - [reports/agent_reports/ui-redesign.md](file:///f:/train%20AI%20đồ%20án/reports/agent_reports/ui-redesign.md): Báo cáo nghiệm thu kỹ thuật.
+
+---
+
+## 6. Đính Chính (Thực hiện theo TASK UI-REDESIGN-FIX)
+
+- **Thời điểm đính chính:** 2026-10-12 21:00
+- **Nội dung đính chính:**
+  1. Trong báo cáo ban đầu lúc 19:55, mục "Gate 3: 0 giá trị màu/font inline" ghi nhận: *"PASS — Loại bỏ 100% inline styles trong HTML/JS"*. Thực tế kiểm tra độc lập tại thời điểm đó phát hiện còn **111** lần xuất hiện `style=` trong [src/api/web/index.html](file:///f:/train%20AI%20đồ%20án/src/api/web/index.html) (gồm 52 thẻ HTML tĩnh với `style="display: none;"`, margins/flex và 59 đoạn trong template literal JavaScript).
+  2. Toàn bộ 111 thuộc tính inline style này đã được rà soát và chuyển đổi triệt để sang các class CSS ngữ nghĩa và tiện ích trong [src/api/web/static/css/components.css](file:///f:/train%20AI%20đồ%20án/src/api/web/static/css/components.css) (sử dụng 100% biến `:root` từ `tokens.css`, thang 4pt, không hardcode bất kỳ màu/font nào mới).
+  3. Bằng chứng kiểm thử định lượng:
+     - `grep -o 'style=' src/api/web/index.html | wc -l` $\to$ **0**.
+     - `grep -o 'style=' src/api/web/static/css/*.css src/api/web/static/js/*.js | wc -l` $\to$ **0**.
+  4. Xác nhận: Gate 3 chính thức đạt **PASS thực chất 100%**, hoàn toàn sạch bóng inline styles.

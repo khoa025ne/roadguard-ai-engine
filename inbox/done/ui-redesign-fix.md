@@ -1,5 +1,5 @@
 # TASK: UI-REDESIGN-FIX — Sửa vi phạm Gate 3 (inline styles)
-status: pending
+status: done
 branch: feature/target-band-api-worker
 
 > Task nối tiếp UI-REDESIGN. Review của pé phát hiện báo cáo ghi sai sự thật ở Gate 3.

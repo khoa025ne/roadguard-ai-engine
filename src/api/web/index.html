@@ -52,9 +52,9 @@
             <div class="radio-group">
               <label class="radio-opt">
                 <input type="radio" name="videoSource" value="preset" checked onchange="toggleSource()">
-                <div style="width: 100%;">
+                <div class="w-full">
                   <strong>Video mẫu sẵn có trên máy:</strong>
-                  <select id="presetVideoSelect" class="select-box" style="margin-top: 6px;" onchange="updatePresetPath()"></select>
+                  <select id="presetVideoSelect" class="select-box mt-1-5" onchange="updatePresetPath()"></select>
                 </div>
               </label>
 
@@ -75,17 +75,17 @@
               </label>
             </div>
 
-            <div id="uploadField" style="display: none;" class="form-group">
+            <div id="uploadField" class="form-group is-hidden">
               <label class="form-label">Chọn tệp video:</label>
               <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/x-msvideo" onchange="onVideoSelected(this)">
             </div>
 
-            <div id="customPathField" style="display: none;" class="form-group">
+            <div id="customPathField" class="form-group is-hidden">
               <label class="form-label">Đường dẫn tệp video tuyệt đối:</label>
               <input type="text" id="customVideoPath" class="input-text" placeholder="C:\Users\...\video.mp4">
             </div>
 
-            <div style="margin-top: 12px;">
+            <div class="mt-3">
               <button type="button" class="btn btn-primary btn-block" id="startBtnVideoTop" onclick="startAnalysis()">
                 Bắt Đầu Phân Tích Video
               </button>
@@ -93,13 +93,13 @@
           </div>
 
           <!-- KHỐI NGUỒN DATASET ZIP / FOLDER -->
-          <div id="datasetSourceContainer" style="display: none;">
+          <div id="datasetSourceContainer" class="is-hidden">
             <div class="radio-group">
               <label class="radio-opt">
                 <input type="radio" name="datasetSource" value="preset_ds" checked onchange="toggleDatasetSource()">
-                <div style="width: 100%;">
+                <div class="w-full">
                   <strong>Dataset mẫu sẵn có:</strong>
-                  <select id="presetDatasetSelect" class="select-box" style="margin-top: 6px;" onchange="updatePresetDatasetPath(); onDatasetPresetChanged()"></select>
+                  <select id="presetDatasetSelect" class="select-box mt-1-5" onchange="updatePresetDatasetPath(); onDatasetPresetChanged()"></select>
                 </div>
               </label>
 
@@ -128,23 +128,23 @@
               </label>
             </div>
 
-            <div id="datasetUploadField" style="display: none;" class="form-group">
+            <div id="datasetUploadField" class="form-group is-hidden">
               <label class="form-label">Chọn tệp nén ZIP dataset:</label>
               <input type="file" id="datasetZipFileInput" accept=".zip" onchange="onZipSelected(this)">
             </div>
 
-            <div id="datasetFolderUploadField" style="display: none;" class="form-group">
+            <div id="datasetFolderUploadField" class="form-group is-hidden">
               <label class="form-label">Chọn thư mục ảnh từ máy tính:</label>
               <input type="file" id="datasetFolderInput" webkitdirectory directory multiple onchange="onFolderSelected(this)">
-              <p class="card-desc" style="margin-top: 4px;">Có thể chọn trực tiếp thư mục chứa hàng chục đến hàng trăm ảnh khảo sát.</p>
+              <p class="card-desc mt-1">Có thể chọn trực tiếp thư mục chứa hàng chục đến hàng trăm ảnh khảo sát.</p>
             </div>
 
-            <div id="datasetCustomPathField" style="display: none;" class="form-group">
+            <div id="datasetCustomPathField" class="form-group is-hidden">
               <label class="form-label">Đường dẫn tệp ZIP hoặc thư mục ảnh:</label>
               <input type="text" id="customDatasetPath" class="input-text" placeholder="D:\datasets\road_dataset.zip" oninput="onCustomDatasetPathChanged(this)">
             </div>
 
-            <div class="form-group" style="margin-top: 8px;">
+            <div class="form-group mt-2">
               <label class="form-label">Số ảnh quét tối đa:</label>
               <select id="maxImagesSelect" class="select-box">
                 <option value="10">10 ảnh (Kiểm tra nhanh)</option>
@@ -154,11 +154,11 @@
               </select>
             </div>
 
-            <div id="datasetSelectionSummary" class="ktv-banner" style="display: none; margin-top: 12px;">
+            <div id="datasetSelectionSummary" class="ktv-banner is-hidden mt-3">
               <span id="datasetSelectionText" class="ktv-banner-title">Đã chọn dữ liệu khảo sát</span>
             </div>
 
-            <div style="margin-top: 12px;">
+            <div class="mt-3">
               <button type="button" class="btn btn-primary btn-block" id="startBtnDataset" onclick="startAnalysis()">
                 Bắt Đầu Quét Dataset
               </button>
@@ -204,29 +204,29 @@
             </div>
 
             <div class="form-group">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                <input type="checkbox" id="useTiling" checked style="width: auto;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="useTiling" checked>
                 Bật cắt mảnh gối đầu (SAHI Tiling 640x640 + NMS)
               </label>
-              <p class="card-desc" style="margin-top: 4px;">
+              <p class="card-desc mt-1">
                 Phân giải ảnh gốc thành các mảnh nhỏ nhằm nhận diện khuyết tật hẹp từ độ cao bay flycam.
               </p>
             </div>
 
-            <div class="ktv-banner" style="margin-top: 8px;">
+            <div class="ktv-banner mt-2">
               <div>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
-                  <input type="checkbox" id="autoCurateKtv" checked style="width: auto;">
+                <label class="checkbox-label-bold">
+                  <input type="checkbox" id="autoCurateKtv" checked>
                   Tự động kích hoạt KTV AI thẩm định ngay sau khi quét
                 </label>
-                <p class="card-desc" style="margin-top: 4px;">
+                <p class="card-desc mt-1">
                   Chuyên gia thị giác máy tính đối chiếu bối cảnh, tinh chỉnh nhãn và loại trừ bóng râm.
                 </p>
               </div>
             </div>
           </div>
 
-          <div style="margin-top: 16px;">
+          <div class="mt-4">
             <button class="btn btn-primary btn-block" id="startBtn" onclick="startAnalysis()">
               Bắt Đầu Phân Tích
             </button>
@@ -286,28 +286,28 @@
           <!-- TAB 1: TRÌNH XEM KHUNG HÌNH (FRAME VIEWER) -->
           <div id="viewerTab" class="tab-content active">
             <div class="viewer-box">
-              <img id="mainViewerImg" class="viewer-img" src="" alt="Chưa có kết quả" style="display: none;">
+              <img id="mainViewerImg" class="viewer-img is-hidden" src="" alt="Chưa có kết quả">
               <div id="placeholderViewer" class="placeholder-box">
                 Nhấn <strong>"Bắt Đầu Phân Tích"</strong> để xem kết quả nhận diện từng khung hình tại đây.
               </div>
             </div>
 
-            <div class="nav-controls" id="navControls" style="display: none;">
+            <div class="nav-controls is-hidden" id="navControls">
               <button class="btn btn-secondary btn-sm" onclick="prevFrame()">◀ Khung trước</button>
               <span id="frameIndicator" class="frame-indicator">Khung hình: 0 / 0</span>
               <button class="btn btn-secondary btn-sm" onclick="nextFrame()">Khung tiếp ▶</button>
             </div>
             <div id="frameDetails" class="frame-details"></div>
             
-            <div id="overviewBtnContainer" style="display: none; margin-top: 12px; text-align: center;">
+            <div id="overviewBtnContainer" class="is-hidden mt-3 text-center">
               <button class="btn btn-secondary btn-sm" id="btnInspectOverviewFrame" onclick="inspectCurrentOverviewFrame()">
                 KTV AI Đọc Toàn Cảnh Khung Hình Này (Dual-View Context)
               </button>
             </div>
 
-            <div id="overviewInspectionResult" class="overview-result-box" style="display: none;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
-                <span style="font-weight: 700; color: var(--accent); font-family: var(--font-mono); text-transform: uppercase;">
+            <div id="overviewInspectionResult" class="overview-result-box is-hidden">
+              <div class="overview-header">
+                <span class="overview-header-title">
                   Nhận định Toàn cảnh KTV AI (Vision Broad Context)
                 </span>
                 <button class="btn btn-secondary btn-sm" onclick="document.getElementById('overviewInspectionResult').style.display='none'">Đóng</button>
@@ -318,17 +318,17 @@
 
           <!-- TAB 2: BỘ SƯU TẬP ẢNH CẬN CẢNH (CROPS GALLERY) -->
           <div id="cropsTab" class="tab-content">
-            <div class="selection-bar" id="selectionBar" style="display: none;">
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
-                  <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width: auto;"> Chọn tất cả
+            <div class="selection-bar is-hidden" id="selectionBar">
+              <div class="d-flex items-center gap-2 flex-wrap">
+                <label class="checkbox-label-sm">
+                  <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)"> Chọn tất cả
                 </label>
                 <button class="btn btn-secondary btn-sm" onclick="filterSelection('pothole')">Chỉ Ổ gà</button>
                 <button class="btn btn-secondary btn-sm" onclick="filterSelection('crack')">Chỉ Vết nứt</button>
                 <button class="btn btn-secondary btn-sm" onclick="clearSelection()">Bỏ chọn</button>
                 <span class="badge badge-accent" id="selectionSummary">Đã chọn: 0 mục</span>
               </div>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <div class="d-flex gap-2 flex-wrap">
                 <button class="btn btn-primary btn-sm" id="btnCurate" onclick="runAiCuration()" disabled>
                   Gửi Mục Đã Chọn (<span id="btnCurateCount">0</span>)
                 </button>
@@ -344,7 +344,7 @@
               </div>
             </div>
 
-            <div id="ktvPromptBanner" class="ktv-banner" style="display: none;">
+            <div id="ktvPromptBanner" class="ktv-banner is-hidden">
               <div>
                 <strong class="ktv-banner-title">Kết quả quét sơ bộ từ YOLO (Chưa qua KTV AI thẩm định)</strong>
                 <p class="ktv-banner-text">Nhấn nút bên phải để kích hoạt KTV AI phân loại chi tiết hình thái vết nứt, loại bỏ bóng râm và đối chiếu toàn cảnh.</p>
@@ -355,7 +355,7 @@
             </div>
 
             <div class="crops-grid" id="cropsGrid">
-              <div class="placeholder-box" style="grid-column: 1 / -1;">
+              <div class="placeholder-box">
                 Chưa có ảnh cắt khuyết tật.
               </div>
             </div>
@@ -363,15 +363,15 @@
 
           <!-- TAB 3: STUDIO THẨM ĐỊNH KTV AI & MA TRẬN ĐỐI CHIẾU -->
           <div id="curationTab" class="tab-content">
-            <div class="selection-bar" id="curationActionBar" style="display: none; flex-direction: column; gap: 10px; align-items: stretch;">
-              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-                <div id="curationStats" style="font-size: 13px; font-family: var(--font-mono);">
+            <div class="selection-bar curation-action-bar-layout is-hidden" id="curationActionBar">
+              <div class="d-flex items-center justify-between flex-wrap gap-2-5">
+                <div id="curationStats" class="curation-stats-text">
                   Đã phân tích: <strong id="curCountAnalyzed">0</strong> | 
                   Khuyết tật độc nhất: <strong id="curCountUnique">0</strong> | 
                   Báo động giả: <strong id="curCountFalse">0</strong> | 
                   Trùng lặp đã gộp: <strong id="curCountDup">0</strong>
                 </div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div class="d-flex gap-2 flex-wrap">
                   <button class="btn btn-secondary btn-sm" onclick="runOverviewContextCurationAll()">
                     Thẩm Định Bối Cảnh Toàn Cảnh
                   </button>
@@ -383,8 +383,8 @@
                   </button>
                 </div>
               </div>
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--border-color); padding-top: 8px;">
-                <span class="stat-lbl" style="margin-top: 0;">Lọc hiển thị:</span>
+              <div class="curation-filter-row">
+                <span class="stat-lbl mt-0">Lọc hiển thị:</span>
                 <button class="btn btn-secondary btn-sm" id="btnFilterCurAll" onclick="filterCurationDisplay('all')">Tất cả (<span id="curCountAll">0</span>)</button>
                 <button class="btn btn-secondary btn-sm active" id="btnFilterCurUnique" onclick="filterCurationDisplay('unique')">Khuyết tật độc nhất (<span id="curCountUniqueBtn">0</span>)</button>
                 <button class="btn btn-secondary btn-sm" id="btnFilterCurCracks" onclick="filterCurationDisplay('crack')">Vết nứt (<span id="curCountCrackBtn">0</span>)</button>
@@ -395,12 +395,12 @@
             </div>
 
             <!-- DASHBOARD ĐÁNH GIÁ HIỆU QUẢ KTV AI -->
-            <div id="ktvEvaluationDashboard" class="ktv-panel" style="display: none;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                <div class="card-title" style="margin-bottom: 0;">
+            <div id="ktvEvaluationDashboard" class="ktv-panel is-hidden">
+              <div class="ktv-eval-header">
+                <div class="card-title mb-0">
                   Đánh Giá Hiệu Quả KTV AI (Vision vs YOLO Local)
                 </div>
-                <div style="display: flex; gap: 6px;">
+                <div class="d-flex gap-1-5">
                   <button class="btn btn-secondary btn-sm" id="btnViewModeCards" onclick="switchCurationView('cards')">Thẻ Chi Tiết</button>
                   <button class="btn btn-secondary btn-sm" id="btnViewModeTable" onclick="switchCurationView('table')">Ma Trận Đối Chiếu</button>
                 </div>
@@ -434,14 +434,14 @@
               </div>
 
               <!-- THANH CHIP LỌC THEO TỪNG TAG KTV -->
-              <div style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                <div class="stat-lbl" style="margin-bottom: 6px;">Xem chi tiết từng nhóm phân loại KTV:</div>
+              <div class="ktv-chips-section">
+                <div class="stat-lbl mb-1-5">Xem chi tiết từng nhóm phân loại KTV:</div>
                 <div id="ktvTagChipsContainer" class="chip-group"></div>
               </div>
             </div>
 
             <!-- BẢNG MA TRẬN ĐỐI CHIẾU YOLO vs KTV -->
-            <div id="ktvComparisonTableBox" class="table-container" style="display: none; margin-bottom: 16px;">
+            <div id="ktvComparisonTableBox" class="table-container is-hidden mb-4">
               <table class="data-table">
                 <thead>
                   <tr>
@@ -459,7 +459,7 @@
             </div>
 
             <div class="curation-grid" id="curationGrid">
-              <div class="placeholder-box" style="grid-column: 1 / -1;">
+              <div class="placeholder-box">
                 Chưa có dữ liệu thẩm định. Hãy vào tab <strong>"Bộ Sưu Tập Cận Cảnh"</strong>, chọn các khuyết tật và nhấn nút <strong>"Gửi Mục Đã Chọn"</strong>.
               </div>
             </div>
@@ -486,7 +486,7 @@
               </table>
             </div>
 
-            <div class="export-actions" id="exportBtns" style="display: none;">
+            <div class="export-actions is-hidden" id="exportBtns">
               <a class="btn btn-outline" id="downloadJsonBtn" href="#" download="inspection_report.json">
                 Tải Báo Cáo JSON
               </a>
@@ -1020,14 +1020,14 @@
               ktvTagBadgeHtml = `
                 <div class="ktv-badge-rendered">
                   <span class="${badgeClass}">${matchingCur.fine_tag}</span>
-                  <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;" title="${matchingCur.reasoning}">
+                  <div class="curation-badge-detail" title="${matchingCur.reasoning}">
                     ${matchingCur.reasoning}
                   </div>
                 </div>
               `;
             } else {
               ktvTagBadgeHtml = `
-                <div style="margin-top: 4px; font-size: 10px;">
+                <div class="mt-1 text-micro">
                   <span class="badge badge-pending">Chờ xác nhận</span>
                 </div>
               `;
@@ -1038,8 +1038,8 @@
               <img class="crop-img" src="${cropSrc}" alt="${c.class_name}" onclick="toggleCropCard(${idx})">
               <div class="crop-info" onclick="toggleCropCard(${idx})">
                 <span class="${tagClass}">${c.class_vn}</span>
-                <span style="color: var(--text-muted); font-size: 11px;">${Math.round(c.confidence * 100)}%</span>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Giây ${c.timestamp_s}s</div>
+                <span class="text-muted text-xxs">${Math.round(c.confidence * 100)}%</span>
+                <div class="text-xxs text-muted mt-0-5">Giây ${c.timestamp_s}s</div>
                 ${ktvTagBadgeHtml}
               </div>
             `;
@@ -1048,7 +1048,7 @@
           updateSelectionUI();
         } else {
           selBar.style.display = 'none';
-          grid.innerHTML = '<div class="placeholder-box" style="grid-column: 1 / -1;">Chưa có ảnh cắt khuyết tật.</div>';
+          grid.innerHTML = '<div class="placeholder-box">Chưa có ảnh cắt khuyết tật.</div>';
         }
 
         // Bảng dữ liệu chi tiết
@@ -1061,10 +1061,10 @@
             const tagClass = d.class_name === 'pothole' ? 'crop-tag-pothole' : 'crop-tag-crack';
             tr.innerHTML = `
               <td>${i + 1}</td>
-              <td style="font-family: var(--font-mono);">${d.timestamp_s}s</td>
+              <td class="font-mono">${d.timestamp_s}s</td>
               <td><span class="${tagClass}">${d.class_vn}</span></td>
-              <td style="font-family: var(--font-mono); font-weight: 700;">${Math.round(d.confidence * 100)}%</td>
-              <td style="font-family: var(--font-mono); font-size: 12px;">[${d.box.join(', ')}]</td>
+              <td class="font-mono font-bold">${Math.round(d.confidence * 100)}%</td>
+              <td class="font-mono text-xs">[${d.box.join(', ')}]</td>
             `;
             tbody.appendChild(tr);
           });
@@ -1381,12 +1381,12 @@
             const tagBadge = isVal ? `<span class="badge badge-accent">${it.fine_tag}</span>` : `<span class="badge badge-subtle">${it.fine_tag}</span>`;
             tr.innerHTML = `
               <td>${i + 1}</td>
-              <td style="font-family: var(--font-mono); font-weight: 700;">${it.defect_id || ('DEF_' + (i+1))}</td>
-              <td><img src="${it.url || it.crop_url}" class="ktv-card-single-img" style="width: 48px; height: 48px;" onclick="window.open('${it.url || it.crop_url}', '_blank')"></td>
+              <td class="font-mono font-bold">${it.defect_id || ('DEF_' + (i+1))}</td>
+              <td><img src="${it.url || it.crop_url}" class="ktv-card-single-img ktv-card-single-img-sm" onclick="window.open('${it.url || it.crop_url}', '_blank')"></td>
               <td><strong>${yoloCls}</strong> (${Math.round((it.confidence || 0.5) * 100)}%)</td>
               <td>${tagBadge}</td>
               <td><span class="badge-severity sev-${(it.severity || 'LOW').toLowerCase()}">${it.severity}</span></td>
-              <td style="font-size: 12px; color: var(--text-body);">${it.reasoning || ''} ${it.recommendation ? `<br><strong style="color: var(--accent);">Khuyến nghị:</strong> ${it.recommendation}` : ''}</td>
+              <td class="text-xs text-body">${it.reasoning || ''} ${it.recommendation ? `<br><strong class="text-accent">Khuyến nghị:</strong> ${it.recommendation}` : ''}</td>
             `;
             compTbody.appendChild(tr);
           });
@@ -1413,7 +1413,7 @@
       grid.innerHTML = '';
 
       if (displayItems.length === 0) {
-        grid.innerHTML = '<div class="placeholder-box" style="grid-column: 1 / -1;">Không có mục nào phù hợp với bộ lọc đã chọn.</div>';
+        grid.innerHTML = '<div class="placeholder-box">Không có mục nào phù hợp với bộ lọc đã chọn.</div>';
         return;
       }
 
@@ -1455,13 +1455,13 @@
             : '';
 
           crackDetailsHtml = `
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+            <div class="d-flex gap-1-5 flex-wrap mt-1">
               ${widthBadge} ${angleBadge} ${densityBadge}
             </div>
             ${it.structural_risk || it.recommendation ? `
               <div class="curation-reason-box">
                 ${it.structural_risk ? `<div><strong>Nguy cơ:</strong> ${it.structural_risk}</div>` : ''}
-                ${it.recommendation ? `<div style="margin-top: 2px;"><strong>Khuyến nghị:</strong> ${it.recommendation}</div>` : ''}
+                ${it.recommendation ? `<div class="mt-0-5"><strong>Khuyến nghị:</strong> ${it.recommendation}</div>` : ''}
               </div>
             ` : ''}
           `;
@@ -1470,13 +1470,13 @@
         let dupGalleryHtml = '';
         if (it.duplicate_views && it.duplicate_views.length > 0) {
           dupGalleryHtml = `
-            <div style="margin-top: 6px; font-size: 11px; color: var(--accent); cursor: pointer; text-decoration: underline;" onclick="toggleDupViews(${realIdx})">
+            <div class="curation-dup-trigger" onclick="toggleDupViews(${realIdx})">
               Có ${it.duplicate_views.length} góc chụp khác đã gộp (Bấm xem/ẩn)
             </div>
-            <div id="dupViews_${realIdx}" style="display: none; gap: 6px; margin-top: 6px; overflow-x: auto; padding: 4px; background: var(--bg-subtle); border-radius: 4px;">
+            <div id="dupViews_${realIdx}" class="curation-dup-drawer">
               ${it.duplicate_views.map(v => `
-                <div style="text-align: center; font-size: 10px; color: var(--text-muted);">
-                  <img src="${v.url}" title="Khung ${v.frame_index} (${v.timestamp_s}s)" class="ktv-card-single-img" style="width: 55px; height: 55px;">
+                <div class="curation-dup-item">
+                  <img src="${v.url}" title="Khung ${v.frame_index} (${v.timestamp_s}s)" class="ktv-card-single-img ktv-card-single-img-thumb">
                   <div>${v.timestamp_s}s</div>
                 </div>
               `).join('')}
@@ -1487,20 +1487,20 @@
         if (it.edit_mode) {
           card.classList.add('curation-edit-box');
           card.innerHTML = `
-            <div style="display: flex; gap: 10px;">
+            <div class="d-flex gap-2-5">
               <img src="${it.url || it.crop_url}" class="ktv-edit-img">
-              <div style="flex: 1; font-size: 12px; display: flex; flex-direction: column; gap: 6px;">
-                <div style="font-weight: bold; color: var(--accent); font-family: var(--font-mono); text-transform: uppercase;">Hiệu Chỉnh Đánh Giá KTV (Mục #${realIdx + 1})</div>
+              <div class="curation-edit-form-col">
+                <div class="curation-edit-title">Hiệu Chỉnh Đánh Giá KTV (Mục #${realIdx + 1})</div>
                 
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                  <label class="form-label" style="margin: 0; font-size: 11px;">Trạng thái:</label>
-                  <select id="editValid_${realIdx}" class="select-box" style="padding: 3px 6px; font-size: 11px; width: auto;">
+                <div class="d-flex gap-1-5 flex-wrap">
+                  <label class="form-label m-0 text-xxs">Trạng thái:</label>
+                  <select id="editValid_${realIdx}" class="select-box select-box-sm">
                     <option value="true" ${isValid ? 'selected' : ''}>Khuyết tật hợp lệ</option>
                     <option value="false" ${!isValid ? 'selected' : ''}>Báo động giả / Bỏ qua</option>
                   </select>
 
-                  <label class="form-label" style="margin: 0; font-size: 11px; margin-left: 6px;">Mức độ:</label>
-                  <select id="editSev_${realIdx}" class="select-box" style="padding: 3px 6px; font-size: 11px; width: auto;">
+                  <label class="form-label m-0 text-xxs ml-1-5">Mức độ:</label>
+                  <select id="editSev_${realIdx}" class="select-box select-box-sm">
                     <option value="CRITICAL" ${it.severity === 'CRITICAL' ? 'selected' : ''}>CRITICAL (Khẩn cấp)</option>
                     <option value="MEDIUM" ${it.severity === 'MEDIUM' ? 'selected' : ''}>MEDIUM (Trung bình)</option>
                     <option value="LOW" ${it.severity === 'LOW' ? 'selected' : ''}>LOW (Nhẹ)</option>
@@ -1508,9 +1508,9 @@
                   </select>
                 </div>
 
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                  <label class="form-label" style="margin: 0; font-size: 11px;">Độ mở vết nứt:</label>
-                  <select id="editWidth_${realIdx}" class="select-box" style="padding: 3px 6px; font-size: 11px; width: auto;">
+                <div class="d-flex gap-1-5 flex-wrap">
+                  <label class="form-label m-0 text-xxs">Độ mở vết nứt:</label>
+                  <select id="editWidth_${realIdx}" class="select-box select-box-sm">
                     <option value="< 3mm (Nhỏ / Nứt tóc)" ${(it.crack_width_level || '').includes('< 3') ? 'selected' : ''}>< 3mm (Nhỏ / Nứt tóc)</option>
                     <option value="3 - 6mm (Trung bình)" ${(it.crack_width_level || '').includes('3 - 6') ? 'selected' : ''}>3 - 6mm (Trung bình)</option>
                     <option value="> 6mm (Rộng / Nguy hiểm)" ${(it.crack_width_level || '').includes('> 6') ? 'selected' : ''}>> 6mm (Rộng / Nguy hiểm)</option>
@@ -1519,9 +1519,9 @@
               </div>
             </div>
 
-            <div style="margin-top: 6px;">
-              <label class="form-label" style="font-size: 11px;">Phân loại khuyết tật chi tiết:</label>
-              <select id="editTag_${realIdx}" class="select-box" style="padding: 4px; font-size: 11px;">
+            <div class="mt-1-5">
+              <label class="form-label text-xxs">Phân loại khuyết tật chi tiết:</label>
+              <select id="editTag_${realIdx}" class="select-box select-box-compact">
                 <option value="Vết nứt dọc tuyến" ${it.fine_tag.includes('dọc') ? 'selected' : ''}>Vết nứt dọc tuyến (crack_longitudinal)</option>
                 <option value="Vết nứt ngang tuyến" ${it.fine_tag.includes('ngang') ? 'selected' : ''}>Vết nứt ngang tuyến (crack_transverse)</option>
                 <option value="Vết nứt chân chim / nứt lưới" ${it.fine_tag.includes('chân chim') || it.fine_tag.includes('lưới') ? 'selected' : ''}>Vết nứt chân chim / lưới (crack_alligator)</option>
@@ -1536,24 +1536,24 @@
               </select>
             </div>
 
-            <div style="margin-top: 6px;">
-              <label class="form-label" style="font-size: 11px;">Lập luận kỹ thuật của chuyên gia:</label>
-              <textarea id="editReason_${realIdx}" class="input-text" rows="2" style="font-size: 11px; resize: vertical;">${it.reasoning || ''}</textarea>
+            <div class="mt-1-5">
+              <label class="form-label text-xxs">Lập luận kỹ thuật của chuyên gia:</label>
+              <textarea id="editReason_${realIdx}" class="input-text text-xxs resize-v" rows="2">${it.reasoning || ''}</textarea>
             </div>
 
-            <div style="margin-top: 6px;">
-              <label class="form-label" style="font-size: 11px;">Khuyến nghị giải pháp:</label>
-              <input type="text" id="editRecom_${realIdx}" class="input-text" value="${it.recommendation || ''}" style="font-size: 11px;" placeholder="Ví dụ: Trám khe nứt bitum nóng">
+            <div class="mt-1-5">
+              <label class="form-label text-xxs">Khuyến nghị giải pháp:</label>
+              <input type="text" id="editRecom_${realIdx}" class="input-text text-xxs" value="${it.recommendation || ''}" placeholder="Ví dụ: Trám khe nứt bitum nóng">
             </div>
 
-            <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
-              <input type="checkbox" id="editDup_${realIdx}" ${it.is_duplicate ? 'checked' : ''} style="width: auto;">
-              <label for="editDup_${realIdx}" style="margin: 0; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+            <div class="mt-1-5 d-flex items-center gap-1-5">
+              <input type="checkbox" id="editDup_${realIdx}" ${it.is_duplicate ? 'checked' : ''}>
+              <label for="editDup_${realIdx}" class="checkbox-label-muted">
                 Đánh dấu ảnh trùng lặp của khuyết tật khác (loại khỏi danh sách độc nhất)
               </label>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px;">
+            <div class="d-flex justify-end gap-1-5 mt-2">
               <button class="btn btn-secondary btn-sm" onclick="cancelEditCurationItem(${realIdx})">Hủy</button>
               <button class="btn btn-primary btn-sm" onclick="saveCurationItemEdit(${realIdx})">Lưu Thay Đổi</button>
             </div>
@@ -1561,13 +1561,13 @@
         } else {
           const dualViewImagesHtml = it.overview_frame_url 
             ? `
-              <div style="display: flex; gap: 8px; flex-direction: column; align-items: center;">
-                <div style="position: relative; text-align: center;">
-                  <span class="stat-lbl" style="font-size: 9px; display: block; margin-bottom: 2px;">Khung Toàn Cảnh</span>
+              <div class="curation-dual-img-col">
+                <div class="curation-img-wrap">
+                  <span class="stat-lbl curation-img-lbl">Khung Toàn Cảnh</span>
                   <img src="${it.overview_frame_url}" title="Bấm phóng to khung hình tổng thể" class="ktv-card-dual-img" onclick="window.open('${it.overview_frame_url}', '_blank')">
                 </div>
-                <div style="position: relative; text-align: center;">
-                  <span class="stat-lbl" style="font-size: 9px; display: block; margin-bottom: 2px;">Cận Cảnh Crop</span>
+                <div class="curation-img-wrap">
+                  <span class="stat-lbl curation-img-lbl">Cận Cảnh Crop</span>
                   <img src="${it.url || it.crop_url}" title="Ảnh cắt cận cảnh" class="ktv-card-dual-img" onclick="window.open('${it.url || it.crop_url}', '_blank')">
                 </div>
               </div>
@@ -1575,19 +1575,19 @@
             : `<img src="${it.url || it.crop_url}" class="ktv-card-single-img" onclick="window.open('${it.url || it.crop_url}', '_blank')">`;
 
           card.innerHTML = `
-            <div style="display: flex; gap: 10px;">
+            <div class="d-flex gap-2-5">
               ${dualViewImagesHtml}
-              <div style="flex: 1; font-size: 12px;">
-                <div style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+              <div class="curation-view-col">
+                <div class="curation-header-row">
                   <div>${badgeHtml} ${dupBadge} ${userEditedBadge}</div>
-                  <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 10px;" onclick="enableEditCurationItem(${realIdx})">Sửa Nhận Định</button>
+                  <button class="btn btn-secondary btn-sm btn-micro" onclick="enableEditCurationItem(${realIdx})">Sửa Nhận Định</button>
                 </div>
-                <div style="margin-bottom: 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                <div class="curation-badges-row">
                   <span class="badge-severity ${sevClass}">Mức độ: ${it.severity}</span>
-                  <span style="color: var(--text-muted); font-size: 11px;">Tin cậy: ${Math.round((it.confidence_verified || it.confidence || 0.8) * 100)}%</span>
+                  <span class="text-muted text-xxs">Tin cậy: ${Math.round((it.confidence_verified || it.confidence || 0.8) * 100)}%</span>
                   ${it.inspector ? `<span class="badge badge-accent">${it.inspector}</span>` : ''}
                 </div>
-                <div style="color: var(--text-muted); font-size: 11px; font-family: var(--font-mono);">
+                <div class="curation-meta-row">
                   Giây ${it.timestamp_s}s • Khung #${it.frame_index || 0} • Box: [${(it.box || []).join(', ')}]
                 </div>
                 ${crackDetailsHtml}
@@ -1720,18 +1720,18 @@
           if (items.length === 0) {
             resContent.innerHTML = `<div class="placeholder-box">KTV AI đã quét khung hình #${fIdx} (Mặt đường bình thường, không có khuyết tật nghiêm trọng).</div>`;
           } else {
-            let html = `<div style="margin-bottom: 8px; font-weight: 600; color: var(--accent);">Đã thẩm định Toàn cảnh + Cận cảnh cho ${items.length} đối tượng trong khung #${fIdx}:</div>`;
+            let html = `<div class="curation-banner-heading">Đã thẩm định Toàn cảnh + Cận cảnh cho ${items.length} đối tượng trong khung #${fIdx}:</div>`;
             items.forEach((it, i) => {
               html += `
                 <div class="overview-result-item">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="d-flex justify-between items-center">
                     <strong>#${i + 1} ${it.fine_tag} [ID: ${it.defect_id || 'N/A'}]</strong>
                     <span class="badge-severity sev-${(it.severity || 'LOW').toLowerCase()}">${it.severity}</span>
                   </div>
-                  <div style="font-size: 11px; margin-top: 2px; color: var(--text-body);">
+                  <div class="curation-item-summary">
                     <strong>Nhận định bối cảnh:</strong> ${it.reasoning}
                   </div>
-                  ${it.recommendation ? `<div style="font-size: 11px; margin-top: 2px; color: var(--accent);"><strong>Khuyến nghị:</strong> ${it.recommendation}</div>` : ''}
+                  ${it.recommendation ? `<div class="curation-item-recom"><strong>Khuyến nghị:</strong> ${it.recommendation}</div>` : ''}
                 </div>
               `;
             });
@@ -1810,7 +1810,7 @@
                   }
                   badgeDiv.innerHTML = `
                     <span class="${badgeClass}">${matchingCur.fine_tag}</span>
-                    <div style="font-size: 9px; color: var(--text-muted); margin-top: 1px;" title="${matchingCur.reasoning}">
+                    <div class="curation-badge-detail-nano" title="${matchingCur.reasoning}">
                       ${matchingCur.reasoning}
                     </div>
                   `;
