@@ -22,14 +22,16 @@ from fastapi import FastAPI, BackgroundTasks, UploadFile, File, HTTPException, s
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+# Thiết lập đường dẫn thư mục gốc và sys.path
+WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
+if str(WORKSPACE_ROOT) not in sys.path:
+    sys.path.insert(0, str(WORKSPACE_ROOT))
 
 from src.inference.predictor import RoadDefectPredictor
 from src.curation import AIAutoTagger, DatasetExporter
 from src.ingestion.dataset_scanner import DatasetScanner
 from src.pipeline.pipeline import run_video_analysis_task
 
-# Thiết lập đường dẫn thư mục gốc
-WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 WEB_DIR = WORKSPACE_ROOT / "src/api/web"
 RESULTS_DIR = WORKSPACE_ROOT / "results/web_runs"
 UPLOADS_DIR = WORKSPACE_ROOT / "results/web_uploads"
@@ -70,8 +72,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount thư mục lưu kết quả ảnh để trình duyệt tải được
+# Mount thư mục lưu kết quả ảnh và tài nguyên tĩnh giao diện
 app.mount("/static_results", StaticFiles(directory=str(RESULTS_DIR)), name="static_results")
+app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
 
 # Bộ nhớ lưu trạng thái tác vụ
 TASKS_STORE: Dict[str, Dict[str, Any]] = {}
@@ -978,5 +981,19 @@ async def download_curated_zip(filename: str):
     if not zip_path.exists():
         raise HTTPException(status_code=404, detail="File zip không tồn tại")
     return FileResponse(str(zip_path), filename=filename, media_type="application/zip")
+
+
+if __name__ == "__main__":
+    import argparse
+    import uvicorn
+
+    parser = argparse.ArgumentParser(description="RoadGuard AI — Web UI Server")
+    parser.add_argument("--host", type=str, default="127.0.0.1", help="Host IP")
+    parser.add_argument("--port", type=int, default=8000, help="Port lắng nghe")
+    parser.add_argument("--reload", action="store_true", help="Auto reload")
+    args = parser.parse_args()
+
+    print(f"🚀 Khởi động RoadGuard Web UI tại: http://{args.host}:{args.port}")
+    uvicorn.run("src.api.ui_server:app", host=args.host, port=args.port, reload=args.reload)
 
 
