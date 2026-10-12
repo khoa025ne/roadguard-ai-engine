@@ -1,151 +1,222 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-tools/inbox_runner/runner.py — Trình Thực Thi Vòng Lặp Nhận Task Tự Động Cho Antigravity
-========================================================================================
-Kiến trúc:
-1. Đồng bộ git pull để kéo các prompt mới do Muse (Pé) đẩy vào inbox/.
-2. Quét thư mục inbox/ tìm file prompt (ưu tiên inbox/NEXT_PROMPT.md hoặc *.md không có tiền tố '_').
-3. Nếu không có file mới -> In log chính xác: "[inbox_runner] inbox empty" và kết thúc.
-4. Nếu có file mới -> Nạp nội dung, gọi Antigravity CLI (agy) thực thi tự hành.
-5. Sau khi xong -> Đổi tên file task thành inbox/_done_<timestamp>_<name>.md.
-"""
+RoadGuard Inbox Runner — mỗi tick (Task Scheduler gọi mỗi 30 phút):
+  git pull -> tìm task pending trong inbox/ -> chạy 1 task bằng `agy -p` headless.
 
+Yêu cầu trên máy Windows:
+  - `agy` CLI đã cài + đăng nhập Google (https://antigravity.google)
+  - Python 3.9+
+  - Repo đã clone, remote origin trỏ đúng github.com/khoa025ne/roadguard-ai-engine
+"""
+import json
 import os
+import shutil
+import subprocess
 import sys
 import time
-import subprocess
 from pathlib import Path
-from datetime import datetime
 
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+REPO = Path(__file__).resolve().parents[2]
+INBOX = REPO / "inbox"
+DONE_DIR = INBOX / "done"
+FAILED_DIR = INBOX / "failed"
+LOG = INBOX / "_runner.log"
+LOCK = INBOX / ".lock"
+ATTEMPTS = INBOX / "_attempts.json"
+BRANCH = "feature/target-band-api-worker"
 
-# Định vị thư mục gốc của repository
-REPO_DIR = Path(__file__).resolve().parents[2]
-INBOX_DIR = REPO_DIR / "inbox"
-INBOX_DIR.mkdir(parents=True, exist_ok=True)
-
-# Đảm bảo agy CLI có trong PATH
-AGY_BIN_DIR = Path(os.environ.get("LOCALAPPDATA", "C:/Users/ADMIN/AppData/Local")) / "agy" / "bin"
-if AGY_BIN_DIR.exists():
-    path_env = os.environ.get("PATH", "")
-    if str(AGY_BIN_DIR) not in path_env:
-        os.environ["PATH"] = f"{AGY_BIN_DIR};{path_env}"
+AGY_FLAGS = ["--print-timeout", "6h", "--dangerously-skip-permissions"]
+# --dangerously-skip-permissions: cho agent chạy tự hành, không dừng hỏi approve.
+#   Tương đương mức tin tưởng đã dùng khi cho agent chạy mission qua đêm.
+#   Muốn chặt hơn: bỏ flag này -> task nào cần approve sẽ đứng chờ (mất tự hành).
 
 
-def run_cmd(cmd_list, cwd=REPO_DIR, check=False):
-    """Chạy lệnh subprocess với UTF-8 encoding."""
+def agy_cmd():
+    # --add-dir: BẮT BUỘC. Không có nó, agy chạy trong scratch dir riêng
+    # (~/.gemini/antigravity-cli/scratch) thay vì repo -> mọi file agent tạo
+    # rơi sai chỗ, git push trong repo fail, task "xong" mà repo trống trơn.
+    # cwd= của subprocess KHÔNG có tác dụng với agy.
+    return ["agy", "--add-dir", str(REPO), "-p", "-", *AGY_FLAGS]
+
+MAX_ATTEMPTS = 3          # task fail 3 lần -> chuyển sang inbox/failed/
+STALE_LOCK_HOURS = 8      # lock quá cũ -> coi như tick trước crash, tự gỡ
+AGY_TIMEOUT = 6.5 * 3600  # phải lớn hơn --print-timeout của agy
+
+SUPERVISOR = """Bạn là agent Antigravity (headless) làm việc trong repo roadguard-ai-engine.
+- Workspace root (= thư mục repo): {repo}  -- mọi file tạo/sửa phải nằm trong này
+- Branch: {branch}
+- BẮT BUỘC đọc và tuân thủ .agents/rules/git_workflow.md (LUẬT SẮT: báo cáo -> git add/commit/push -> verify).
+- Dùng sequential-thinking. Trích dẫn file:dòng cho mọi khẳng định kỹ thuật.
+- KHÔNG xóa file khi chưa được duyệt. KHÔNG đụng file ngoài repo này.
+- Nhiệm vụ chi tiết trong TASK bên dưới. Làm đúng spec, đủ điều kiện nghiệm thu.
+
+KHI HOÀN THÀNH (bắt buộc, không được bỏ bước nào):
+1. Viết báo cáo vào reports/agent_reports/<ten-task>.md
+2. Sửa frontmatter task file thành status: done, chuyển file sang inbox/done/
+3. git add -A reports inbox && git commit && git push origin {branch}
+4. Verify: git log origin/{branch} --oneline -1
+Bước nào fail: ghi rõ lý do vào báo cáo rồi mới kết thúc.
+"""
+
+
+def log(msg):
+    line = f"{time.strftime('%Y-%m-%d %H:%M:%S')} {msg}"
+    print(line, flush=True)
     try:
-        res = subprocess.run(
-            cmd_list,
-            cwd=str(cwd),
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            shell=True
-        )
-        return res.returncode, res.stdout.strip(), res.stderr.strip()
-    except Exception as e:
-        return -1, "", str(e)
+        INBOX.mkdir(parents=True, exist_ok=True)
+        with open(LOG, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except OSError:
+        pass
 
 
-def git_sync_pull():
-    """Đồng bộ git pull từ remote để lấy task mới nhất."""
-    code, out, err = run_cmd(["git", "pull"])
-    if code != 0:
-        print(f"[inbox_runner] Cảnh báo git pull thất bại: {err}")
-    else:
-        print(f"[inbox_runner] Git pull: {out}")
+def sh(args, check=False):
+    return subprocess.run(args, cwd=REPO, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
 
 
-def find_pending_task():
-    """Tìm task đang chờ trong inbox/ (ưu tiên NEXT_PROMPT.md)."""
-    next_prompt = INBOX_DIR / "NEXT_PROMPT.md"
-    if next_prompt.exists() and next_prompt.is_file():
-        return next_prompt
-
-    # Quét các file .md khác không có tiền tố '_'
-    candidates = []
-    for f in INBOX_DIR.glob("*.md"):
-        if not f.name.startswith("_"):
-            candidates.append(f)
-
-    if candidates:
-        # Lấy file có thời gian chỉnh sửa cũ nhất trước (FIFO)
-        candidates.sort(key=lambda x: x.stat().st_mtime)
-        return candidates[0]
-
-    return None
-
-
-def execute_task(task_file: Path):
-    """Kích hoạt agy CLI thực thi nội dung task."""
-    print(f"[inbox_runner] Phát hiện nhiệm vụ mới: {task_file.name}")
+def load_attempts():
     try:
-        with open(task_file, "r", encoding="utf-8") as f:
-            prompt_content = f.read().strip()
-    except Exception as e:
-        print(f"[inbox_runner] Lỗi đọc file {task_file}: {e}")
-        return False
+        return json.loads(ATTEMPTS.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
 
-    if not prompt_content:
-        print(f"[inbox_runner] File task rỗng, bỏ qua.")
-        archive_task(task_file, status="empty")
+
+def save_attempts(d):
+    ATTEMPTS.write_text(json.dumps(d, indent=1), encoding="utf-8")
+
+
+def pending_tasks():
+    tasks = []
+    if not INBOX.exists():
+        return tasks
+    for p in sorted(INBOX.glob("*.md")):
+        if p.name.startswith("_"):
+            continue
+        head = p.read_text(encoding="utf-8")[:800]
+        if "status: pending" in head:
+            tasks.append(p)
+    return tasks
+
+
+def ensure_branch():
+    """Đảm bảo đang đứng trên BRANCH. Clone mặc định ở main: nếu pull
+    origin/BRANCH khi đang ở main sẽ merge nhầm feature branch vào main."""
+    cur = sh(["git", "rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip()
+    if cur == BRANCH:
         return True
-
-    print(f"[inbox_runner] Kích hoạt Antigravity CLI ('agy') với độ dài prompt: {len(prompt_content)} ký tự...")
-    
-    # Sử dụng agy CLI với chế độ non-interactive print mode và auto-approve tool permissions
-    cmd = [
-        "agy",
-        "--print",
-        "--dangerously-skip-permissions",
-        prompt_content
-    ]
-
-    t0 = time.time()
-    code, out, err = run_cmd(cmd)
-    elapsed = time.time() - t0
-
-    if code == 0:
-        print(f"[inbox_runner] Hoàn thành nhiệm vụ thành công sau {elapsed:.1f}s.")
-        archive_task(task_file, status="done")
-        return True
-    else:
-        print(f"[inbox_runner] Lỗi khi thực thi agy (exit code {code}): {err}")
-        archive_task(task_file, status="error")
+    r = sh(["git", "checkout", BRANCH])
+    if r.returncode != 0:
+        r = sh(["git", "checkout", "-b", BRANCH, f"origin/{BRANCH}"])
+    if r.returncode != 0:
+        log(f"checkout {BRANCH} fail: {r.stderr.strip()[:200]}")
         return False
+    log(f"checkout -> {BRANCH} (dang o {cur})")
+    return True
 
 
-def archive_task(task_file: Path, status="done"):
-    """Lưu trữ task đã hoàn tất bằng cách đổi tên."""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    target_name = f"_{status}_{timestamp}_{task_file.name}"
-    target_path = INBOX_DIR / target_name
-    try:
-        task_file.rename(target_path)
-        print(f"[inbox_runner] Đã lưu trữ task sang: {target_name}")
-    except Exception as e:
-        print(f"[inbox_runner] Không thể đổi tên file task: {e}")
+def git_sync():
+    """Pull task mới về. Không đè việc đang dở: repo bẩn -> bỏ tick này."""
+    dirty = sh(["git", "status", "--porcelain"]).stdout.strip()
+    if dirty:
+        log(f"repo dirty, skip tick de khong de mat viec do:\n{dirty[:500]}")
+        return False
+    if not ensure_branch():
+        return False
+    r = sh(["git", "pull", "--ff-only", "origin", BRANCH])
+    if r.returncode != 0:
+        log(f"git pull fail: {r.stderr.strip()[:300]}")
+        return False
+    return True
+
+
+def commit_state(msg):
+    sh(["git", "add", "-A", "inbox", "reports"])
+    r = sh(["git", "commit", "-m", msg])
+    if r.returncode == 0:
+        p = sh(["git", "push", "origin", BRANCH])
+        if p.returncode != 0:
+            log(f"git push fail: {p.stderr.strip()[:300]}")
+    # returncode != 0 thường là "nothing to commit" -> bình thường
 
 
 def main():
-    print(f"[inbox_runner] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} — Bắt đầu kiểm tra hàng đợi...")
-    
-    # 1. Đồng bộ git
-    git_sync_pull()
+    log("=== tick ===")
+    if not shutil.which("agy"):
+        log("ERROR: khong tim thay `agy` tren PATH. Cai tai https://antigravity.google roi dang nhap.")
+        return 1
+    if LOCK.exists():
+        age_h = (time.time() - LOCK.stat().st_mtime) / 3600
+        if age_h < STALE_LOCK_HOURS:
+            log(f"lock con hieu luc ({LOCK.read_text()[:50]}), tick khac dang chay -> skip")
+            return 0
+        log("lock qua cu, coi nhu tick truoc crash -> go lock")
+        LOCK.unlink()
 
-    # 2. Quét task
-    task_file = find_pending_task()
-    if not task_file:
-        print("[inbox_runner] inbox empty")
-        sys.exit(0)
+    if not git_sync():
+        commit_state("inbox-runner: tick (skip, repo dirty hoac pull fail)")
+        return 0
 
-    # 3. Thực thi task
-    success = execute_task(task_file)
-    sys.exit(0 if success else 1)
+    tasks = pending_tasks()
+    if not tasks:
+        log("inbox empty")
+        commit_state("inbox-runner: tick (inbox empty)")
+        return 0
+
+    task = tasks[0]
+    attempts = load_attempts()
+    n = attempts.get(task.name, 0)
+    log(f"lay task: {task.name} (attempt {n + 1})")
+    LOCK.write_text(
+        f"{task.name} pid={os.getpid()} at={time.strftime('%Y-%m-%d %H:%M:%S')}",
+        encoding="utf-8")
+
+    prompt = (SUPERVISOR.format(repo=REPO, branch=BRANCH)
+              + f"\n--- TASK FILE: inbox/{task.name} ---\n\n"
+              + task.read_text(encoding="utf-8"))
+    try:
+        r = subprocess.run(agy_cmd(),
+                           input=prompt, cwd=REPO,
+                           capture_output=True, text=True,
+                           encoding="utf-8", errors="replace",
+                           timeout=AGY_TIMEOUT)
+        log(f"agy exit={r.returncode}")
+        if r.stdout:
+            log(f"agy stdout tail: {r.stdout[-600:]}")
+        if r.returncode != 0 and r.stderr:
+            log(f"agy stderr tail: {r.stderr[-600:]}")
+    except subprocess.TimeoutExpired:
+        log("agy timeout 6.5h")
+        r = None
+    finally:
+        LOCK.unlink(missing_ok=True)
+
+    ok = (r is not None and r.returncode == 0)
+    if ok and (INBOX / task.name).exists():
+        # agent quen chuyen file -> runner don dep giup
+        log("agent chua chuyen task sang done/, runner tu chuyen")
+        DONE_DIR.mkdir(exist_ok=True)
+        (INBOX / task.name).rename(DONE_DIR / task.name)
+        attempts.pop(task.name, None)
+    elif not ok:
+        n += 1
+        attempts[task.name] = n
+        if n >= MAX_ATTEMPTS:
+            log(f"task fail {n} lan -> chuyen sang inbox/failed/")
+            FAILED_DIR.mkdir(exist_ok=True)
+            (INBOX / task.name).rename(FAILED_DIR / task.name)
+            attempts.pop(task.name, None)
+        else:
+            log(f"task fail lan {n}, de pending de tick sau thu lai")
+    else:
+        attempts.pop(task.name, None)
+    save_attempts(attempts)
+
+    commit_state(f"inbox-runner: {task.name} ({'done' if ok else 'failed attempt'})")
+    log("=== het tick ===")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
