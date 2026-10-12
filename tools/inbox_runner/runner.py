@@ -26,6 +26,11 @@ LOCK = INBOX / ".lock"
 ATTEMPTS = INBOX / "_attempts.json"
 BRANCH = "feature/target-band-api-worker"
 
+# Tự động nạp agy bin vào PATH nếu có
+AGY_DEFAULT_BIN = Path(os.environ.get("LOCALAPPDATA", "C:/Users/ADMIN/AppData/Local")) / "agy" / "bin"
+if AGY_DEFAULT_BIN.exists() and str(AGY_DEFAULT_BIN) not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = f"{AGY_DEFAULT_BIN};{os.environ.get('PATH', '')}"
+
 AGY_FLAGS = ["--print-timeout", "6h", "--dangerously-skip-permissions"]
 # --dangerously-skip-permissions: cho agent chạy tự hành, không dừng hỏi approve.
 #   Tương đương mức tin tưởng đã dùng khi cho agent chạy mission qua đêm.
