@@ -47,6 +47,8 @@ runs/
 results/
 outputs/
 *.log
+inbox/.lock
+inbox/_attempts.json
 wandb/
 
 # Model weights

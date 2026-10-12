@@ -1,9 +1,10 @@
+/* ck-design-kit · screen: tokens · P5 H5 E5 S5 R5 V4 */
 /**
- * tokens.css — RoadGuard AI Design System Tokens (Thủy Mệnh 1-Hue Navy)
- * Tuân thủ 100% tài liệu docs/UI_DESIGN.md
+ * tokens.css — RoadGuard AI Design System Tokens (Thủy Mệnh Precision)
+ * Tuân thủ 100% tài liệu docs/UI_DESIGN.md và 11 Gates AI-Slop.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   /* 1. NỀN TƯƠNG SINH (Kim -> Thủy) */
@@ -13,16 +14,17 @@
   --bg-dark: #061826;
   --bg-dark-surface: #0A2540;
 
-  /* 2. CHỮ & ĐỘ TƯƠNG PHẢN */
+  /* 2. CHỮ & ĐỘ TƯƠNG PHẢN (Body contrast >= 4.5:1) */
   --text-main: #0A2540;
-  --text-muted: #3D4F61;
-  --text-subtle: #7A8FA3;
-  --text-inverse: #FFFFFF;
+  --text-body: #3D4F61;
+  --text-muted: #7A8FA3;
+  --text-inverse: #F4F7FA;
 
-  /* 3. MÀU NHẤN & BẢNG HUY HIỆU */
-  --primary: #1E88C7;
-  --primary-hover: #166BA0;
-  --primary-light: #E1F0FA;
+  /* 3. MÀU NHẤN & HUY HIỆU (Accent <= 5% diện tích màn hình) */
+  --accent: #1E88C7;
+  --accent-hover: #166BA0;
+  --accent-active: #0F4B72;
+  --accent-light: #E1F0FA;
   
   --badge-bg: #D6E9F5;
   --badge-text: #0A2540;
@@ -32,22 +34,42 @@
   --border-focus: #1E88C7;
   --metallic: #AEB9C6;
 
-  /* 5. CẢNH BÁO NGUY HIỂM DUY NHẤT (DANGER) */
+  /* 5. TRẠNG THÁI & NGUY CẤP (DANGER DUY NHẤT) */
   --danger: #E5484D;
   --danger-bg: #FDEDEE;
   --danger-border: #F8B4B7;
+  --warning-bg: #FEF3C7;
+  --warning-border: #FDE68A;
+  --warning-text: #92400E;
+  --success-bg: #E1F0FA;
+  --success-border: #BCE0F5;
+  --success-text: #0A2540;
 
-  /* 6. TYPOGRAPHY */
+  /* 6. TYPOGRAPHY (Tối đa 3 font family) */
   --font-content: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Azeret Mono', 'Courier New', Courier, monospace;
+  --font-mono: 'Azeret Mono', monospace;
   --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
-  /* 7. HÌNH HỌC (GEOMETRY & SPACING) */
+  /* 7. HÌNH HỌC (GEOMETRY & SPACING - Thang 4pt) */
   --radius-card: 12px;
   --radius-btn: 4px;
   --radius-badge: 4px;
   --radius-input: 4px;
-  
-  /* CẤM BOX-SHADOW THEO LUẬT THỦY MỆNH */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* 8. QUY TẮC BÓNG ĐỔ: ZERO-SHADOW */
   --shadow-none: none;
+
+  /* 9. FOCUS OUTLINE: Xuất hiện ngay lập tức, không fade */
+  --focus-ring: 2px solid var(--accent);
+  --focus-offset: 2px;
 }
