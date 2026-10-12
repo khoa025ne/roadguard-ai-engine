@@ -47,3 +47,18 @@ git merge feature/<tên-tính-năng>
 git push origin dev
 git branch -d feature/<tên-tính-năng>
 ```
+
+---
+
+## 4. LUẬT SẮT — PUSH SAU MỖI TASK (Áp dụng mọi task từ nay về sau, không ngoại lệ)
+
+1. **Sequential-Thinking MCP Mandate**: Mỗi khi dùng `sequential-thinking` MCP phân rã task, bước CUỐI CÙNG trong mọi kế hoạch PHẢI LUÔN là "Bước PUSH":
+   - Viết báo cáo task $\rightarrow$ `git add` $\rightarrow$ `git commit` $\rightarrow$ `git push origin <branch>`.
+   - Kế hoạch nào thiếu Bước PUSH = **chưa hoàn chỉnh, không được phép thực thi**.
+2. **Verify Remote Commit**: Sau khi push, BẮT BUỘC verify bằng:
+   ```bash
+   git log origin/<branch> --oneline -1
+   ```
+   để xác nhận commit đã lên remote thành công.
+   - Nếu push thất bại: thử lại 1 lần $\rightarrow$ nếu vẫn thất bại thì ghi rõ lý do vào báo cáo task rồi mới chuyển sang task tiếp theo. CẤM bỏ qua im lặng.
+3. **Checkpoint bắt buộc**: CẤM kết thúc task khi chưa push (hoặc chưa ghi rõ lý do push thất bại trong báo cáo). Đây là checkpoint bắt buộc ngang hàng với viết báo cáo.
