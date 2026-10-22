@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RoadGuard — DJI crack pilot 20 ảnh</title>
+  <style>
+    body{font:15px system-ui,sans-serif;margin:0;background:#f5f7fa;color:#17212b}
+    header{background:#12344c;color:white;padding:12px 20px}h1{font-size:20px;margin:0}
+    main{display:grid;grid-template-columns:300px minmax(0,1fr) 310px;gap:12px;padding:12px;height:calc(100vh - 70px);box-sizing:border-box}
+    section{background:white;border:1px solid #d6dce2;border-radius:8px;padding:12px;overflow:auto}
+    h2{font-size:16px;margin:4px 0 12px}.item{display:block;width:100%;text-align:left;background:#fff;border:1px solid #d6dce2;border-radius:5px;padding:7px;margin-bottom:6px;cursor:pointer}
+    .item:hover,.item.active{background:#e5f3fc;border-color:#1976aa}.group{margin:14px 0 6px;font-weight:700}
+    .meta{font-size:12px;color:#536271;line-height:1.4}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+    .canvas-wrap{overflow:auto;max-height:calc(100vh - 190px);border:1px solid #c8d3dc;background:#222}
+    canvas{display:block;cursor:crosshair}.field{display:block;margin:10px 0}.field span{display:block;font-weight:600;margin-bottom:4px}
+    input:not([type=checkbox]):not([type=range]),select,textarea{width:100%;box-sizing:border-box;padding:7px;border:1px solid #aebbc5;border-radius:4px;font:inherit}
+    textarea{height:82px}button{cursor:pointer;padding:7px 10px}.small{font-size:12px;color:#536271}
+    #notice{white-space:pre-wrap;padding:8px;border-radius:4px;background:#eef5f8;min-height:22px}
+    #boxes{font-size:12px;max-height:95px;overflow:auto}.danger{color:#9d2e1e}.good{color:#176c36}
+    @media(max-width:1050px){main{grid-template-columns:210px 1fr;height:auto}section:last-child{grid-column:1/-1}}
+  </style>
+</head>
+<body>
+<header><h1>RoadGuard · batch DJI 20 ảnh · gán nhãn cục bộ</h1><div class="small">Chưa có nhãn nào được duyệt mặc định. Ảnh xiên tách khỏi nhánh nadir.</div></header>
+<main>
+  <section><h2>Ảnh theo nhóm sàng lọc</h2><div id="items"></div></section>
+  <section>
+    <div class="toolbar"><strong id="current">Chọn ảnh bên trái</strong><label>Phóng to <input id="zoom" type="range" min="35" max="200" value="60"> <span id="zoom-value">60%</span></label><button id="undo" type="button">Bỏ box cuối</button><button id="clear" type="button">Xóa box nháp</button></div>
+    <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+    <p class="small">Kéo chuột trên ảnh để vẽ box crack. Phóng to và cuộn để kiểm tra nét mảnh. Không vẽ box cho khe sạch, bóng, vạch sơn hoặc vùng chưa chắc chắn.</p>
+    <div id="boxes"></div>
+  </section>
+  <section>
+    <h2>Phiếu ảnh / trạng thái</h2><div id="provenance" class="meta"></div>
+    <label class="field"><span>Quyết định chất lượng</span><select id="quality"><option value="uncertain">Chưa chắc / cần kiểm tra</option><option value="accept">Đủ chất lượng</option><option value="reject">Loại khỏi pilot</option></select></label>
+    <label class="field"><span>Trạng thái nhãn</span><select id="status"><option value="draft">Bản nháp</option><option value="pending_review">Chờ kỹ sư duyệt</option><option value="uncertain">Không chắc crack/khe</option><option value="reject">Loại ảnh</option><option value="approved">Được kỹ sư duyệt</option></select></label>
+    <label class="field"><span>Người gán nhãn</span><input id="annotator" placeholder="Tên người thao tác"></label>
+    <label class="field"><span>Người duyệt (chỉ khi approved)</span><input id="reviewer" placeholder="Tên kỹ sư duyệt"></label>
+    <label class="field"><span>Phút gán nhãn thực tế</span><input id="minutes" type="number" min="0" max="1440" step="0.1" placeholder="Để trống nếu chưa đo"></label>
+    <label class="field"><span>Ghi chú / lý do uncertain, reject</span><textarea id="notes" placeholder="Nêu vị trí và lý do; không đoán crack nếu không rõ"></textarea></label>
+    <label class="field"><input id="negative" type="checkbox"> Đã kiểm toàn ảnh và xác nhận không có crack (chỉ kỹ sư)</label>
+    <label class="field"><input id="confirm" type="checkbox"> Tôi là người duyệt được chỉ định và đã kiểm tra ảnh/nhãn (bắt buộc khi approved)</label>
+    <button id="save" type="button">Lưu phiên bản mới</button>
+    <p id="notice" role="status">Dữ liệu chỉ lưu trong máy này; mỗi lần lưu tạo một revision JSON, không ghi đè.</p>
+    <p class="small">Mask crack/road chưa vẽ ở giao diện này. Cần công cụ polygon/brush riêng và kỹ sư duyệt trước khi đưa vào train.</p>
+  </section>
+</main>
+<script src="/ui.js"></script>
+</body></html>

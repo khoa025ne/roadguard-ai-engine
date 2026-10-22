@@ -1,0 +1,39 @@
+{
+  "survey_id": "sha256:replace-after-ingest",
+  "flight_id": "2026-10-04-route-01",
+  "camera_profile": {
+    "drone": "DJI Mini 2 SE",
+    "sensor_width_mm": 6.17,
+    "sensor_height_mm": 4.55,
+    "focal_length_mm": 4.26,
+    "video_width_px": 2720,
+    "video_height_px": 1530,
+    "fps": 30
+  },
+  "flight_profile": {
+    "gimbal_pitch_deg": -90.0,
+    "gimbal_tolerance_deg": 2.0,
+    "target_altitude_m": 10.0,
+    "target_speed_mps": 3.5,
+    "capture_mode": "waypoint"
+  },
+  "assets": [
+    {
+      "basename": "DJI_0057",
+      "video_path": "00_raw/PROJECT/SURVEY/flight/video/DJI_0057.MP4",
+      "srt_path": "00_raw/PROJECT/SURVEY/flight/telemetry/DJI_0057.SRT",
+      "video_sha256": "sha256:replace",
+      "srt_sha256": "sha256:replace",
+      "pairing_status": "pending_runtime_verify"
+    }
+  ],
+  "telemetry": {
+    "required_fields": ["gps", "barometer", "gimbal_pitch"],
+    "status": "pending_runtime_verify"
+  },
+  "processing": {
+    "model_version": "pending",
+    "config_hash": "pending",
+    "code_commit": "pending"
+  }
+}
