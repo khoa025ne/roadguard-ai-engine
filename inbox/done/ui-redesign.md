@@ -1,5 +1,5 @@
 # TASK: UI-REDESIGN — Redesign toàn bộ UI RoadGuard (design-first)
-status: pending
+status: done
 branch: feature/target-band-api-worker
 
 > Copy file này vào `F:\train AI đồ án\inbox\` — Inbox Runner sẽ tự pick up trong vòng 30 phút.

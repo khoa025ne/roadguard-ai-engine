@@ -1,0 +1,25 @@
+{
+  "purpose": "Sparse first-batch visual/annotation-rule triage; not positive or negative ground truth",
+  "frames": [
+    {"video": "DJI_0059", "frame_index": 360, "reason": "early route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0059", "frame_index": 900, "reason": "spaced route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0059", "frame_index": 1500, "reason": "spaced route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0059", "frame_index": 2400, "reason": "spaced route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0059", "frame_index": 3200, "reason": "late route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0060", "frame_index": 600, "reason": "early route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0060", "frame_index": 2200, "reason": "spaced route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0060", "frame_index": 4200, "reason": "spaced route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0060", "frame_index": 6200, "reason": "spaced route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0060", "frame_index": 8200, "reason": "late route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0061", "frame_index": 900, "reason": "early route coverage; assess road visibility/angle"},
+    {"video": "DJI_0061", "frame_index": 3300, "reason": "spaced route coverage; assess road visibility/angle"},
+    {"video": "DJI_0061", "frame_index": 5700, "reason": "spaced route coverage; assess road visibility/angle"},
+    {"video": "DJI_0061", "frame_index": 8500, "reason": "spaced route coverage; assess road visibility/angle"},
+    {"video": "DJI_0061", "frame_index": 11200, "reason": "late route coverage; assess road visibility/angle"},
+    {"video": "DJI_0063", "frame_index": 350, "reason": "early route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0063", "frame_index": 1000, "reason": "spaced route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0063", "frame_index": 1800, "reason": "spaced route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0063", "frame_index": 2600, "reason": "spaced route coverage; inspect crack/joint/shadow"},
+    {"video": "DJI_0063", "frame_index": 3400, "reason": "late route coverage; inspect crack/joint/shadow"}
+  ]
+}

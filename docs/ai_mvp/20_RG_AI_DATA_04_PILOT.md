@@ -1,0 +1,25 @@
+# RG-AI-DATA-04 — batch pilot DJI crack (2026-10-22)
+
+## Kết quả thực tế và ranh giới
+
+- Đã đối chiếu SHA-256 của 4 cặp MP4/SRT dùng trong batch với audit 04-10 trước khi ghi file; file gốc không thay đổi. Chọn/trích **20/120 frame** (mỗi video `0059`, `0060`, `0061`, `0063`: 5) ở 1920×1080, không trích toàn bộ video. `0062` không nằm trong batch: clip 6 giây, audit trước ghi khung giữa bị che; chưa chứng minh đủ chất lượng. Không xóa/loại video khỏi registry.
+- Ảnh, manifest JSON và queue CSV: `data/pilots/crack_dji_20261022_batch01/`. Mỗi ảnh có video/SRT nguồn, hash nguồn, frame index zero-based, thời điểm **danh nghĩa** tính từ FPS, hash ảnh, kích thước và lý do lấy mẫu. Thời điểm này **không chứng minh khớp cue SRT/PTS**; không dùng GPS, H, pitch hoặc GSD để gán nhãn.
+- Đã kiểm tra decode đúng frame yêu cầu theo OpenCV, JPEG mở lại được, đúng 1920×1080; toàn bộ 20 ảnh có SHA-256. Độ sáng trung bình 85,99–131,71 và Laplacian variance 704,15–1971,18 chỉ là tín hiệu kỹ thuật, **không** là chứng nhận nét/đủ sáng tại vết nứt. Full-frame dHash gần nhất cách 19 bit, chưa thấy trùng hiển nhiên trong batch; không loại trừ cùng đoạn đường giữa các clip.
+- Contact sheet `qa_contact_sheet.jpg` và `visual_triage.csv` chỉ là **nhận xét sơ bộ**: 6 `provisional_keep`, 7 `uncertain`, 7 `provisional_reject` vì góc nhìn xiên rõ. Ngay cả `provisional_keep` vẫn phải xác minh nadir và chất lượng tại ảnh gốc. Nhiều ảnh có bóng, khe/đường tối, cây, xe; **0 crack positive, 0 clean negative, 0 joint label đã được kỹ sư xác nhận**. Chưa thấy vạch sơn chắc chắn trong 20 ảnh; không bịa quota cho nhóm này.
+- **0 bbox đã gán, 0 crack mask, 0 road mask, 0 nhãn approved**. Tất cả `bbox_status=unlabeled`, `mask_status=unlabeled`, `annotation_review_status=pending_review`. Chưa có người gán nhãn/kỹ sư duyệt được chỉ định trong task, nên **thời gian gán nhãn thực tế: chưa đo** (manifest `null`), không thay bằng ước lượng DATA-03. Đây là pilot tổ chức dữ liệu/chất lượng, chưa là dataset train.
+
+## Quy tắc gán nhãn batch đầu
+
+1. Người phụ trách mở ảnh gốc 1920×1080 và xem ngữ cảnh video khi cần; ghi `quality=accept/ambiguous/reject`, lý do (`oblique`, `blur`, `occluded`, `non_road`, `too_small_to_resolve`), thời gian thực tế và tên người review. `visual_triage.csv` chỉ là gợi ý từ contact sheet, không phải phê duyệt.
+2. Nếu ảnh hợp lệ, kỹ sư phân biệt: `crack` = đứt gãy mặt bê tông nhìn thấy; khe co giãn sạch, bóng, sơn, dây điện, vệt bẩn, mép cỏ/xe **không** là crack. Vỡ mép/nứt thực cạnh khe chỉ gán đúng phần hư hỏng. Trường hợp không đủ bằng chứng ghi `uncertain` và nguyên nhân, không ép positive/negative.
+3. Box crack dùng tọa độ pixel `[x_min,y_min,x_max,y_max]` ở ảnh gốc; một vùng/nhánh liên tục một box, ôm sát nét nhìn thấy nhưng không mở rộng cả mảng bóng/khe. Ảnh không nứt chỉ thành hard-negative/clean khi người gán đã kiểm toàn ảnh và kỹ sư xác nhận; **không sinh YOLO TXT rỗng mặc định**.
+4. Chỉ chọn tối đa **40 ảnh** trong 120 ảnh đã được duyệt chất lượng để vẽ mask crack + road. Mask PNG nhị phân đúng 1920×1080, `255` là vùng nhãn, `0` là ngoài vùng, kèm mask `ignore` riêng nếu cần. Crack mask chỉ tô pixel chắc chắn, không tô toàn box; road mask là mặt bê tông thực, loại xe/cây/lề/nhà. Giữ annotation gốc editable (polygon/brush), ảnh nguồn không sửa. Nếu chưa có crack rõ, không ép 40 mask.
+5. Lưu label bản nháp vào thư mục mới `annotations/draft/` theo tên ảnh và tool export (gợi ý LabelMe JSON cho polygon/box hoặc CVAT export); không sửa manifest như thể được duyệt. Sau kiểm tra độc lập mới đưa bản được duyệt vào `annotations/approved/` với reviewer, ngày, phiên bản guideline và log quyết định. Chưa cài LabelMe/CVAT trong Python environment hiện tại; thao tác gán nhãn ở công cụ do người dùng chọn. Không chuyển nhãn auto/legacy thành GT.
+6. Batch đầu: người gán ghi phút/ảnh và vướng mắc cho **20 ảnh này**, kỹ sư rà lại tất cả positive/ambiguous/reject và quy tắc nadir. Sau đó mới quyết định lấy thêm ứng viên, vẫn dưới 120/40. Không chia train/val/test khi chưa chứng minh survey/đoạn tuyến độc lập.
+
+## Kiểm tra và việc cần quyết định
+
+- Phát hiện chính: nhiều khung nhìn xiên dù SOP quy định gimbal −90° ±2°. Không có pitch telemetry đáng tin nên không thể đo dung sai từ ảnh; kỹ sư cần xác nhận tiêu chí loại và lựa chọn bay bổ sung đúng SOP nếu dữ liệu hợp lệ quá ít.
+- Cần chỉ định **annotator** và **kỹ sư duyệt crack vs khe/nadir**; xác nhận công cụ annotation. Họ duyệt `visual_triage.csv`, làm/ghi thời gian 20 ảnh đầu, phân xử nhóm `uncertain`. Sau duyệt mới mở batch tiếp và đo số giờ thực tế.
+- Cần ghi session/route segment để kiểm tra clip trùng tuyến. Chưa được dùng 20 ảnh này làm holdout độc lập hoặc tính FP/km.
+- Tool tái lập: `python tools/prepare_dji_crack_pilot.py --selection docs/ai_mvp/manifests/crack_dji_pilot_batch01_selection.json --audit docs/ai_mvp/manifests/dji_20261004.json --output <thư_mục_mới>`; **không chạy lại trên thư mục hiện tại** vì tool từ chối ghi đè. Kiểm thử `python -m unittest tests.test_prepare_dji_crack_pilot -q`.

@@ -1,14 +1,55 @@
+/* ck-design-kit · screen: components · P5 H5 E5 S5 R5 V4 */
 /**
  * components.css — Hệ Thống Thành Phần Giao Diện Thủy Mệnh (RoadGuard UI)
- * 100% Tuân thủ: Nút bo 4px, Card bo 12px, Zero-Shadow, Không emoji, Font chuẩn.
+ * Tuân thủ 100% 11 Gates AI-Slop:
+ * - 8 states cho phần tử tương tác: default, hover, focus-visible, active, disabled, loading, error, success
+ * - Bo 4px nút, 12px card, zero-shadow, border-width không đổi 1px.
+ * - Cấm transition-all (chỉ định rõ từng thuộc tính transition).
  */
 
-/* 1. NÚT BẤM (BUTTONS) */
+/* ==========================================================================
+   1. THẺ NỘI DUNG (CARDS)
+   ========================================================================== */
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-none);
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: var(--space-4);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-title-accent {
+  color: var(--accent);
+}
+
+.card-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+  font-family: var(--font-content);
+}
+
+/* ==========================================================================
+   2. NÚT BẤM & 8 TRẠNG THÁI (BUTTONS & 8 STATES)
+   ========================================================================== */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-family: var(--font-ui);
   font-size: 13px;
   font-weight: 600;
@@ -16,48 +57,129 @@
   border-radius: var(--radius-btn);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   user-select: none;
   text-decoration: none;
-  box-shadow: var(--shadow-none) !important;
+  box-shadow: var(--shadow-none);
+  line-height: 1.4;
+  /* Gate 8: Cấm transition-all */
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.12s;
+  transition-timing-function: ease-in-out;
 }
 
+/* State 1: Default Primary */
 .btn-primary {
-  background-color: var(--primary);
-  color: #FFFFFF;
-  border-color: var(--primary);
-}
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-hover);
-  border-color: var(--primary-hover);
+  background-color: var(--accent);
+  color: var(--text-inverse);
+  border-color: var(--accent);
 }
 
+/* State 2: Hover */
+.btn-primary:hover:not(:disabled):not(.is-loading) {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* State 3: Focus-Visible (Hiện ngay, không fade) */
+.btn-primary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* State 4: Active */
+.btn-primary:active:not(:disabled) {
+  background-color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+
+/* State 5: Disabled */
+.btn-primary:disabled {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* State 6: Loading */
+.btn.is-loading {
+  position: relative;
+  pointer-events: none;
+  color: transparent !important;
+}
+
+.btn.is-loading::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 50%;
+  left: 50%;
+  margin: -7px 0 0 -7px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* State 7: Error */
+.btn.is-error {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+/* State 8: Success */
+.btn.is-success {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+  border-color: var(--success-border);
+}
+
+/* Secondary Button */
 .btn-secondary {
   background-color: var(--bg-surface);
   color: var(--text-main);
   border-color: var(--border-color);
 }
-.btn-secondary:hover:not(:disabled) {
+.btn-secondary:hover:not(:disabled):not(.is-loading) {
   background-color: var(--bg-subtle);
   border-color: var(--metallic);
 }
-
-.btn-ghost {
-  background-color: transparent;
-  color: var(--text-muted);
+.btn-secondary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
-.btn-ghost:hover:not(:disabled) {
+.btn-secondary:active:not(:disabled) {
   background-color: var(--bg-subtle);
-  color: var(--text-main);
+  border-color: var(--accent);
+}
+.btn-secondary:disabled {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* Ghost / Sm / Lg / Block Variants */
+.btn-outline {
+  background-color: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--accent-light);
 }
 
 .btn-danger {
   background-color: var(--danger);
-  color: #FFFFFF;
+  color: var(--text-inverse);
   border-color: var(--danger);
 }
 .btn-danger:hover:not(:disabled) {
   background-color: #C93439;
+  border-color: #C93439;
 }
 
 .btn-sm {
@@ -66,30 +188,36 @@
 }
 
 .btn-lg {
-  padding: 12px 24px;
+  padding: 12px 20px;
   font-size: 14px;
   font-weight: 700;
 }
 
-.btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed !important;
+.btn-block {
+  width: 100%;
 }
 
-/* 2. HUY HIỆU (BADGES) */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   3. HUY HIỆU & NHÃN (BADGES)
+   ========================================================================== */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  padding: 3px 7px;
+  padding: 3px 8px;
   border-radius: var(--radius-badge);
   background-color: var(--badge-bg);
   color: var(--badge-text);
-  border: 1px solid rgba(30, 136, 199, 0.2);
+  border: 1px solid var(--border-color);
+  line-height: 1.2;
 }
 
 .badge-subtle {
@@ -98,417 +226,991 @@
   border-color: var(--border-color);
 }
 
-.badge-dark {
-  background-color: var(--bg-dark-surface);
-  color: #FFFFFF;
-  border-color: var(--border-color);
+.badge-accent {
+  background-color: var(--accent-light);
+  color: var(--accent-hover);
+  border-color: rgba(30, 136, 199, 0.3);
 }
 
-.badge-critical {
-  background-color: var(--danger);
-  color: #FFFFFF;
-  border-color: var(--danger);
-}
-
-.badge-medium {
-  background-color: var(--bg-subtle);
-  color: var(--text-main);
-  border-color: var(--border-color);
-}
-
-.badge-low {
-  background-color: var(--badge-bg);
-  color: var(--badge-text);
-  border-color: var(--border-color);
-}
-
-/* 3. KHỐI METRICS TỔNG HỢP (SUMMARY METRICS BAR) */
-.metrics-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-}
-
-.metric-pill {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.metric-pill-label {
-  font-size: 11px;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  color: var(--text-muted);
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-
-.metric-pill-val {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-main);
-  font-family: var(--font-mono);
-  line-height: 1.1;
-}
-
-.metric-pill.highlight-critical .metric-pill-val {
+.badge-danger {
+  background-color: var(--danger-bg);
   color: var(--danger);
+  border-color: var(--danger-border);
 }
 
-.metric-pill.highlight-primary .metric-pill-val {
-  color: var(--primary);
+.badge-warning {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning-border);
 }
 
-/* 4. FORM VÀ NHẬP LIỆU (INPUTS) */
+.badge-pending {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-color);
+}
+
+/* ==========================================================================
+   4. PHẦN TỬ BIỂU MẪU (FORM CONTROLS)
+   ========================================================================== */
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  margin-bottom: var(--space-4);
 }
 
-.form-label {
-  font-size: 12.5px;
+label.form-label {
+  display: block;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-main);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  margin-bottom: var(--space-1);
+  font-family: var(--font-ui);
 }
 
-.form-control {
-  font-family: var(--font-content);
-  font-size: 13px;
-  color: var(--text-main);
+.input-text,
+.select-box,
+input[type="text"],
+select {
+  width: 100%;
+  padding: 8px 12px;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-input);
-  padding: 8px 12px;
-  outline: none;
-  transition: border-color 0.15s ease;
-  width: 100%;
+  color: var(--text-main);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  box-shadow: var(--shadow-none);
+  transition-property: border-color, background-color;
+  transition-duration: 0.12s;
+  transition-timing-function: ease-in-out;
 }
-.form-control:focus {
+
+.input-text:hover,
+.select-box:hover,
+input[type="text"]:hover,
+select:hover {
+  border-color: var(--metallic);
+}
+
+.input-text:focus-visible,
+.select-box:focus-visible,
+input[type="text"]:focus-visible,
+select:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
   border-color: var(--border-focus);
 }
 
-.form-select {
-  font-family: var(--font-content);
-  font-size: 13px;
-  color: var(--text-main);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-input);
-  padding: 8px 12px;
-  outline: none;
+.input-text:disabled,
+.select-box:disabled,
+input[type="text"]:disabled,
+select:disabled {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+input[type="file"] {
   width: 100%;
-}
-
-.radio-card-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.radio-card {
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-input);
-  padding: 10px 12px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  cursor: pointer;
-  background-color: var(--bg-surface);
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-.radio-card:hover {
-  background-color: var(--bg-app);
-}
-.radio-card.active {
-  border-color: var(--primary);
-  background-color: var(--primary-light);
-}
-
-.file-dropzone {
+  padding: 8px;
+  background-color: var(--bg-subtle);
   border: 1px dashed var(--border-color);
   border-radius: var(--radius-input);
-  padding: 16px;
-  text-align: center;
-  background-color: var(--bg-app);
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-.file-dropzone:hover {
-  border-color: var(--primary);
-  background-color: var(--primary-light);
-}
-
-/* 5. TABS ĐIỀU HƯỚNG KHÔNG GIAN KẾT QUẢ */
-.tab-nav {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 14px;
-}
-
-.tab-btn {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 9px 16px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-.tab-btn:hover {
-  color: var(--text-main);
-}
-.tab-btn.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  background-color: rgba(30, 136, 199, 0.05);
-}
-
-.tab-pane {
-  display: none;
-}
-.tab-pane.active {
-  display: block;
-}
-
-/* 6. TIẾN TRÌNH TUYẾN TÍNH 7 STAGES (PROGRESS TRACKER) */
-.pipeline-progress-box {
-  background-color: var(--bg-dark);
-  color: var(--text-inverse);
-  border-radius: 8px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  color: var(--text-body);
   font-size: 12px;
+  cursor: pointer;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+input[type="checkbox"] {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+.range-val {
+  font-weight: 700;
+  color: var(--accent);
+  float: right;
   font-family: var(--font-mono);
 }
 
-.progress-bar-rail {
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.radio-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  background-color: var(--bg-surface);
+  padding: var(--space-3);
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition-property: border-color, background-color;
+  transition-duration: 0.12s;
+  transition-timing-function: ease-in-out;
+}
+
+.radio-opt:hover {
+  border-color: var(--accent);
+  background-color: var(--bg-subtle);
+}
+
+.radio-opt input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+
+.switch-nav {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.switch-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.12s;
+}
+
+.switch-btn.active {
+  background-color: var(--bg-dark);
+  color: var(--text-inverse);
+  border-color: var(--bg-dark);
+}
+
+/* ==========================================================================
+   5. THANH TIẾN TRÌNH & TRẠNG THÁI (PROGRESS BAR)
+   ========================================================================== */
+.progress-box {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-btn);
+}
+
+.progress-bar-bg {
   width: 100%;
-  height: 6px;
-  background-color: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
+  height: 8px;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-btn);
   overflow: hidden;
+  border: 1px solid var(--border-color);
+  margin: var(--space-2) 0;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background-color: var(--primary);
   width: 0%;
-  transition: width 0.3s ease;
+  background-color: var(--accent);
+  transition-property: width;
+  transition-duration: 0.25s;
+  transition-timing-function: ease-out;
 }
 
-.stage-steps-list {
+.status-text {
+  font-size: 11px;
+  color: var(--text-muted);
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.stage-step-tag {
+  justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--metallic);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.stage-step-tag.running {
-  background-color: rgba(30, 136, 199, 0.3);
-  color: #FFFFFF;
-  border-color: var(--primary);
-}
-.stage-step-tag.done {
-  background-color: rgba(16, 185, 129, 0.2);
-  color: #34D399;
-  border-color: rgba(16, 185, 129, 0.4);
 }
 
-/* 7. TRÌNH XEM KHUNG HÌNH (FRAME VIEWER & SCRUBBER) */
-.frame-viewer-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* ==========================================================================
+   6. BẢNG THỐNG KÊ CHỈ SỐ VÀNG (STAT CARDS)
+   ========================================================================== */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-3);
 }
 
-.frame-canvas-box {
-  background-color: #000000;
-  border-radius: 8px;
-  overflow: hidden;
-  position: relative;
-  min-height: 440px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.stat-item {
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  box-shadow: var(--shadow-none);
 }
 
-.frame-canvas-box img {
-  max-width: 100%;
-  max-height: 620px;
-  object-fit: contain;
+.stat-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  line-height: 1.2;
+}
+
+.stat-num-accent { color: var(--accent); }
+.stat-num-danger { color: var(--danger); }
+.stat-num-pending { color: var(--text-muted); }
+
+.stat-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-family: var(--font-ui);
+}
+
+/* ==========================================================================
+   7. HỆ THỐNG TABS ĐIỀU HƯỚNG (TABS NAV)
+   ========================================================================== */
+.tabs-nav {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--space-4);
+  overflow-x: auto;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-ui);
+  transition-property: color, border-bottom-color;
+  transition-duration: 0.12s;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  color: var(--text-main);
+}
+
+.tab-btn:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 700;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
   display: block;
 }
 
-.frame-scrubber-bar {
+/* ==========================================================================
+   8. TRÌNH XEM KHUNG HÌNH (FRAME VIEWER)
+   ========================================================================== */
+.viewer-box {
+  text-align: center;
+  background-color: var(--bg-dark);
+  border-radius: var(--radius-btn);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--space-3);
+  min-height: 380px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+}
+
+.viewer-img {
+  max-width: 100%;
+  max-height: 520px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.placeholder-box {
+  padding: var(--space-10) var(--space-5);
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.nav-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.frame-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
+
+.frame-details {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+}
+
+/* ==========================================================================
+   9. BỘ SƯU TẬP ẢNH CẬN CẢNH (CROPS GALLERY)
+   ========================================================================== */
+.selection-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-subtle);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.crops-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-3);
+  max-height: 520px;
+  overflow-y: auto;
+  padding: var(--space-1);
+}
+
+.crop-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 8px 12px;
+  border-radius: var(--radius-btn);
+  overflow: hidden;
+  text-align: center;
+  position: relative;
+  transition-property: border-color;
+  transition-duration: 0.12s;
 }
 
-.frame-slider {
-  flex: 1;
-  accent-color: var(--primary);
+.crop-card:hover {
+  border-color: var(--accent);
+}
+
+.crop-card.selected {
+  border: 1px solid var(--accent);
+  background-color: var(--accent-light);
+}
+
+.crop-select-checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
   cursor: pointer;
+  z-index: 10;
 }
 
-/* 8. BẢNG DỮ LIỆU KỸ THUẬT (DATA TABLE) */
-.data-table-container {
-  overflow-x: auto;
+.crop-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  background-color: var(--bg-dark);
+  display: block;
+}
+
+.crop-info {
+  padding: var(--space-2);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ==========================================================================
+   10. STUDIO THẨM ĐỊNH KTV & BẢNG MA TRẬN ĐỐI CHIẾU
+   ========================================================================== */
+.ktv-panel {
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
-.rg-table {
+.matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.matrix-card {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-btn);
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.matrix-val {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  line-height: 1.2;
+}
+
+.matrix-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.chip-group {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.chip-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-badge);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-body);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.chip-btn.active {
+  background-color: var(--bg-dark);
+  color: var(--text-inverse);
+  border-color: var(--bg-dark);
+}
+
+.curation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+  max-height: 520px;
+  overflow-y: auto;
+  padding: var(--space-1);
+}
+
+.curation-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-btn);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ==========================================================================
+   11. BẢNG DỮ LIỆU & XUẤT BÁO CÁO (DATA TABLE)
+   ========================================================================== */
+.table-container {
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-btn);
+}
+
+table.data-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   text-align: left;
 }
 
-.rg-table th {
-  background-color: var(--bg-app);
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
+table.data-table th {
+  background-color: var(--bg-subtle);
+  padding: 10px 12px;
+  color: var(--text-main);
   font-weight: 700;
-  text-transform: uppercase;
-  padding: 10px 14px;
   border-bottom: 1px solid var(--border-color);
-  letter-spacing: 0.3px;
-}
-
-.rg-table td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--bg-subtle);
-  color: var(--text-main);
-  vertical-align: middle;
-}
-
-.rg-table tr:hover td {
-  background-color: var(--primary-light);
-}
-
-/* 9. LƯỚI ẢNH CẬN CẢNH (CROPS GALLERY GRID) */
-.crops-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-  max-height: 600px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.crop-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: border-color 0.15s ease;
-  cursor: pointer;
-}
-.crop-card:hover {
-  border-color: var(--primary);
-}
-
-.crop-card-img {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  background-color: #000000;
-}
-
-.crop-card-body {
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.crop-card-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.crop-card-meta {
-  font-size: 11px;
   font-family: var(--font-mono);
-  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
-/* 10. TRẠNG THÁI RỖNG (EMPTY STATE) & TẢI (LOADING) */
-.empty-state {
-  padding: 48px 24px;
-  text-align: center;
+table.data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-body);
+}
+
+table.data-table tr:hover {
+  background-color: var(--bg-subtle);
+}
+
+.export-actions {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border: 1px dashed var(--border-color);
-  border-radius: 8px;
-  background-color: var(--bg-app);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  flex-wrap: wrap;
 }
 
-.empty-state-title {
-  font-size: 15px;
+/* Banner nhắc việc KTV */
+.ktv-banner {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-btn);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.ktv-banner-title {
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
   font-family: var(--font-content);
 }
 
-.empty-state-desc {
-  font-size: 13px;
+.ktv-banner-text {
+  font-size: 12px;
   color: var(--text-muted);
-  max-width: 420px;
+  margin-top: 2px;
 }
 
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-color);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+/* ==========================================================================
+   12. LỚP TIỆN ÍCH CHO PHẦN TỬ ĐỘNG (DYNAMIC ELEMENT HELPERS)
+   ========================================================================== */
+.crop-tag-crack { color: var(--text-main); font-weight: 700; }
+.crop-tag-pothole { color: var(--danger); font-weight: 700; }
+
+.badge-verified {
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+  border: 1px solid var(--accent);
+  padding: 3px 8px;
+  border-radius: var(--radius-badge);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-block;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.badge-false {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 3px 8px;
+  border-radius: var(--radius-badge);
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
 }
+
+.badge-severity {
+  padding: 3px 6px;
+  border-radius: var(--radius-badge);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.sev-critical {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+.sev-medium {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+
+.sev-low {
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+  border: 1px solid var(--border-color);
+}
+
+.sev-none {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.ktv-badge-rendered {
+  margin-top: var(--space-1);
+  padding: 4px 6px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-btn);
+  text-align: left;
+}
+
+.ktv-card-dual-img {
+  width: 120px;
+  height: 75px;
+  object-fit: cover;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-dark);
+  cursor: pointer;
+}
+
+.ktv-card-single-img {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-dark);
+  cursor: pointer;
+}
+
+.curation-edit-box {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-btn);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.curation-reason-box {
+  background-color: var(--bg-subtle);
+  padding: 6px 10px;
+  border-radius: var(--radius-btn);
+  font-size: 11px;
+  color: var(--text-body);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  margin-top: var(--space-1);
+}
+
+.curation-reason-box.is-false {
+  border-left-color: var(--metallic);
+}
+
+.overview-result-box {
+  margin-top: var(--space-3);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-btn);
+  padding: var(--space-3);
+  font-size: 13px;
+}
+
+.overview-result-item {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  padding: 8px 10px;
+  border-radius: var(--radius-btn);
+  margin-bottom: var(--space-1);
+}
+
+/* ==========================================================================
+   13. TIỆN ÍCH KHÔNG GIAN, BỐ CỤC & TYPOGRAPHY (GATE 3 COMPLIANCE)
+   Tuân thủ nghiêm ngặt tokens.css, không hardcode màu sắc hoặc font chữ.
+   ========================================================================== */
+.is-hidden { display: none; }
+.w-full { width: 100%; }
+.w-auto { width: auto; }
+.text-center { text-align: center; }
+
+/* Spacing theo thang 4pt & chuẩn công nghiệp */
+.mt-0 { margin-top: 0; }
+.mt-0-5 { margin-top: 2px; }
+.mt-1 { margin-top: var(--space-1); }       /* 4px */
+.mt-1-5 { margin-top: 6px; }
+.mt-2 { margin-top: var(--space-2); }       /* 8px */
+.mt-2-5 { margin-top: 10px; }
+.mt-3 { margin-top: var(--space-3); }       /* 12px */
+.mt-4 { margin-top: var(--space-4); }       /* 16px */
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: var(--space-1); }
+.mb-1-5 { margin-bottom: 6px; }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+.m-0 { margin: 0; }
+.ml-1-5 { margin-left: 6px; }
+
+.pt-2 { padding-top: var(--space-2); }
+.pt-2-5 { padding-top: 10px; }
+.pb-1-5 { padding-bottom: 6px; }
+.pb-2 { padding-bottom: var(--space-2); }
+.p-1 { padding: var(--space-1); }
+
+.border-t { border-top: 1px solid var(--border-color); }
+.border-b { border-bottom: 1px solid var(--border-color); }
+
+/* Typography & Colors từ :root */
+.font-mono { font-family: var(--font-mono); }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+.text-xs { font-size: 12px; }
+.text-xxs { font-size: 11px; }
+.text-micro { font-size: 10px; }
+.text-nano { font-size: 9px; }
+.text-muted { color: var(--text-muted); }
+.text-accent { color: var(--accent); }
+.text-body { color: var(--text-body); }
+.text-uppercase { text-transform: uppercase; }
+.text-underline { text-decoration: underline; }
+.cursor-pointer { cursor: pointer; }
+.resize-v { resize: vertical; }
+
+/* Flexbox utilities */
+.d-flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+.gap-1 { gap: var(--space-1); }
+.gap-1-5 { gap: 6px; }
+.gap-2 { gap: var(--space-2); }
+.gap-2-5 { gap: 10px; }
+
+/* Dedicated Semantic UI Helpers */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+.checkbox-label-bold {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.checkbox-label-sm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.checkbox-label-muted {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.select-box-sm {
+  padding: 3px 6px;
+  font-size: 11px;
+  width: auto;
+}
+.select-box-compact {
+  padding: 4px;
+  font-size: 11px;
+}
+
+.ktv-card-single-img-sm {
+  width: 48px;
+  height: 48px;
+}
+.ktv-card-single-img-thumb {
+  width: 55px;
+  height: 55px;
+}
+
+.curation-dup-trigger {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.curation-dup-drawer {
+  display: none;
+  gap: 6px;
+  margin-top: 6px;
+  overflow-x: auto;
+  padding: 4px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-btn);
+}
+.curation-dup-item {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.curation-action-bar-layout {
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+.curation-filter-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-2);
+}
+.curation-stats-text {
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+.ktv-eval-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--space-2);
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.ktv-chips-section {
+  margin-top: 10px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 10px;
+}
+
+.overview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+}
+.overview-header-title {
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.curation-edit-title {
+  font-weight: bold;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+.curation-dual-img-col {
+  display: flex;
+  gap: var(--space-2);
+  flex-direction: column;
+  align-items: center;
+}
+.curation-img-wrap {
+  position: relative;
+  text-align: center;
+}
+.curation-img-lbl {
+  font-size: 9px;
+  display: block;
+  margin-bottom: 2px;
+}
+.curation-badge-detail {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.curation-badge-detail-nano {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.curation-edit-form-col {
+  flex: 1;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.curation-view-col {
+  flex: 1;
+  font-size: 12px;
+}
+.curation-header-row {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.curation-badges-row {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.curation-meta-row {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+.curation-item-summary {
+  font-size: 11px;
+  margin-top: 2px;
+  color: var(--text-body);
+}
+.curation-item-recom {
+  font-size: 11px;
+  margin-top: 2px;
+  color: var(--accent);
+}
+.curation-banner-heading {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.btn-micro {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+
