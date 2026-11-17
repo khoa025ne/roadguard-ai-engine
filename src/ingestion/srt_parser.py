@@ -5,20 +5,19 @@ Hỗ trợ dòng drone DJI Mini 2 SE và tương thích với định dạng ph�
 """
 
 import re
-import json
 from pathlib import Path
-from dataclasses import dataclass, asdict
-from typing import List, Optional, Tuple
+from dataclasses import dataclass
+from typing import List, Optional
 
 
 @dataclass
 class FrameTelemetry:
     """Telemetry data cho một khung hình hoặc mốc thời gian."""
     timestamp_ms: int           # Thời gian video tính bằng milliseconds
-    latitude: float             # Vĩ độ (WGS84)
-    longitude: float            # Kinh độ (WGS84)
-    rel_alt_m: float            # Độ cao tương đối so với điểm cất cánh (mét)
-    abs_alt_m: float            # Độ cao tuyệt đối so với mực nước biển (mét)
+    latitude: Optional[float]   # GPS ghi trong SRT; chưa xác minh độ chính xác
+    longitude: Optional[float]
+    rel_alt_m: Optional[float]  # Chỉ có khi nguồn ghi rõ rel_alt; KHÔNG phải AGL
+    abs_alt_m: Optional[float]  # Chỉ có khi nguồn ghi rõ abs_alt
     iso: Optional[int] = None
     shutter: Optional[str] = None
     fnum: Optional[float] = None
@@ -28,12 +27,19 @@ class FrameTelemetry:
     gimbal_roll: Optional[float] = None
     gimbal_yaw: Optional[float] = None
     gsd_mm_per_px: Optional[float] = None # Ground Sampling Distance (mm/pixel)
+    gps_status: str = "missing"
+    altitude_status: str = "missing"
+    gimbal_pitch_status: str = "missing"
+    reported_h_m: Optional[float] = None  # H nguyên dạng DJI, chưa xác minh hệ quy chiếu
+    reported_d_m: Optional[float] = None  # D nguyên dạng DJI, không phải độ cao
+    gps_third_value: Optional[float] = None  # Thành phần thứ ba GPS(...), chưa rõ datum
+    raw_text: str = ""
 
 
 class DJISRTParser:
     """
     Parser phụ đề viễn thám DJI SRT.
-    Trích xuất GPS (lat, lon, alt) và góc Gimbal mỗi ~33ms.
+    Giữ telemetry theo đúng những gì SRT ghi; không tự suy AGL, nadir hoặc GSD.
     """
 
     DJI_MINI_2_SE = {
@@ -78,45 +84,54 @@ class DJISRTParser:
 
     def parse_srt_block(self, content: str, start_ms: int) -> Optional[FrameTelemetry]:
         """Parse nội dung text trong một block phụ đề SRT."""
-        # Trích xuất GPS (lat, lon)
-        gps_match = re.search(r'\[(?:latitude|lat)\s*:\s*([-+]?\d+\.\d+)\]\s*\[(?:longitude|lon)\s*:\s*([-+]?\d+\.\d+)\]', content, re.I)
-        if not gps_match:
-            gps_match = re.search(r'GPS\s*\(([-+]?\d+\.\d+),\s*([-+]?\d+\.\d+)', content, re.I)
-        if not gps_match:
-            gps_match = re.search(r'([-+]?\d+\.\d{5,}),\s*([-+]?\d+\.\d{5,})', content)
+        number = r"([-+]?\d+(?:\.\d+)?)"
+        labelled_lat = re.search(r"\[(?:latitude|lat)\s*:\s*" + number + r"\]", content, re.I)
+        labelled_lon = re.search(r"\[(?:longitude|lon)\s*:\s*" + number + r"\]", content, re.I)
+        gps = re.search(r"GPS\s*\(\s*" + number + r"\s*,\s*" + number +
+                        r"(?:\s*,\s*" + number + r")?\s*\)", content, re.I)
+        lat = lon = third = None
+        gps_status = "missing"
+        if labelled_lat and labelled_lon:
+            lat, lon = float(labelled_lat.group(1)), float(labelled_lon.group(1))
+        elif gps:
+            # Format DJI đã đối chiếu với SRT thật: GPS (longitude, latitude, value).
+            lon, lat = float(gps.group(1)), float(gps.group(2))
+            third = float(gps.group(3)) if gps.group(3) is not None else None
+        if lat is not None and lon is not None:
+            if -90 <= lat <= 90 and -180 <= lon <= 180:
+                gps_status = "present_unverified"
+            else:
+                lat = lon = None
+                gps_status = "invalid"
+        elif labelled_lat or labelled_lon or "GPS" in content.upper():
+            gps_status = "invalid"
 
-        if not gps_match:
-            return None
+        def field(pattern: str) -> Optional[float]:
+            match = re.search(pattern + r"\s*[: ]\s*" + number + r"\s*m?\b", content, re.I)
+            return float(match.group(1)) if match else None
 
-        lat = float(gps_match.group(1))
-        lon = float(gps_match.group(2))
-
-        # Trích xuất độ cao
-        rel_alt_m = 10.0  # default fallback nếu không tìm thấy
-        rel_match = re.search(r'\[rel_alt:\s*([-+]?\d+\.?\d*)m?\]', content, re.I)
-        if rel_match:
-            rel_alt_m = float(rel_match.group(1))
-        else:
-            alt_match = re.search(r'(?:rel_alt|altitude|alt|barometer):\s*([-+]?\d+\.?\d*)m?', content, re.I)
-            if alt_match:
-                rel_alt_m = float(alt_match.group(1))
-
-        # Góc Gimbal Pitch
-        gimbal_pitch = -90.0
-        pitch_match = re.search(r'\[(?:gimbal_pitch|pitch):\s*([-+]?\d+\.?\d*)\]', content, re.I)
-        if pitch_match:
-            gimbal_pitch = float(pitch_match.group(1))
-
-        gsd = self.calc_gsd(rel_alt_m)
+        rel_alt_m = field(r"\brel_alt\b")
+        abs_alt_m = field(r"\babs_alt\b")
+        reported_h_m = field(r"\bH\b")
+        reported_d_m = field(r"\bD\b")
+        gimbal_pitch = field(r"\b(?:gimbal_pitch|gimbal\s+pitch|pitch)\b")
 
         return FrameTelemetry(
             timestamp_ms=start_ms,
             latitude=lat,
             longitude=lon,
             rel_alt_m=rel_alt_m,
-            abs_alt_m=rel_alt_m,
+            abs_alt_m=abs_alt_m,
             gimbal_pitch=gimbal_pitch,
-            gsd_mm_per_px=round(gsd, 3)
+            gps_status=gps_status,
+            altitude_status="reported_relative_unverified" if rel_alt_m is not None else
+                            "reported_absolute_unverified" if abs_alt_m is not None else
+                            "reported_h_unverified" if reported_h_m is not None else "missing",
+            gimbal_pitch_status="present_unverified" if gimbal_pitch is not None else "missing",
+            reported_h_m=reported_h_m,
+            reported_d_m=reported_d_m,
+            gps_third_value=third,
+            raw_text=content.strip(),
         )
 
     def parse_file(self, srt_path: str | Path) -> List[FrameTelemetry]:

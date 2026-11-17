@@ -4,26 +4,28 @@ src/utils/geo.py — Các tiện ích viễn thám, tọa độ địa lý WGS84
 """
 
 import math
-from typing import Tuple
+from typing import Optional, Tuple
 
 
 def calculate_defect_ground_coords(
     drone_lat: float,
     drone_lon: float,
     altitude_m: float,
-    gimbal_pitch_deg: float = -90.0,
+    gimbal_pitch_deg: Optional[float] = None,
     pixel_x: float = 1360.0,
     pixel_y: float = 765.0,
     image_w: int = 2720,
     image_h: int = 1530,
     focal_mm: float = 4.26,
     sensor_w_mm: float = 6.17
-) -> Tuple[float, float, str]:
+) -> Tuple[Optional[float], Optional[float], str]:
     """
     Tính toán tọa độ địa lý mặt đất (WGS84) của khuyết tật từ góc nghiêng Gimbal và tâm BBox.
     """
-    if drone_lat == 0.0 and drone_lon == 0.0:
-        return 0.0, 0.0, "UNKNOWN"
+    if (gimbal_pitch_deg is None or abs(gimbal_pitch_deg + 90.0) > 2.0 or
+            altitude_m <= 0 or not (-90 <= drone_lat <= 90 and -180 <= drone_lon <= 180) or
+            (drone_lat == 0.0 and drone_lon == 0.0)):
+        return None, None, "UNREFERENCED"
 
     cx = image_w / 2.0
     cy = image_h / 2.0

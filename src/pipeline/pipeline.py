@@ -103,6 +103,8 @@ def run_video_analysis_task(
     v_path = Path(video_path)
     if not v_path.exists():
         raise FileNotFoundError(f"Không tìm thấy file video: {v_path}")
+    if srt_path and Path(srt_path).stem != v_path.stem:
+        raise ValueError("Tên file MP4/SRT phải trùng basename 100%")
 
     t_id = task_id or f"task_{int(time.time())}"
     out_dir = Path(output_dir) if output_dir else Path(f"outputs/reports/{t_id}")
@@ -145,7 +147,7 @@ def run_video_analysis_task(
         # Lấy telemetry gần nhất
         matched_telem = None
         if telemetries:
-            matched_telem = min(telemetries, key=lambda t: abs(t.timestamp_ms - timestamp_ms))
+            matched_telem = srt_parser.get_frame_gps(telemetries, frame_idx, orig_fps)
 
         gps_info = {}
         if matched_telem:
@@ -153,7 +155,17 @@ def run_video_analysis_task(
                 "latitude": matched_telem.latitude,
                 "longitude": matched_telem.longitude,
                 "rel_alt_m": matched_telem.rel_alt_m,
-                "gsd_mm_per_px": matched_telem.gsd_mm_per_px
+                "abs_alt_m": matched_telem.abs_alt_m,
+                "reported_h_m": matched_telem.reported_h_m,
+                "reported_d_m": matched_telem.reported_d_m,
+                "gps_third_value": matched_telem.gps_third_value,
+                "gimbal_pitch": matched_telem.gimbal_pitch,
+                "gsd_mm_per_px": matched_telem.gsd_mm_per_px,
+                "gps_status": matched_telem.gps_status,
+                "altitude_status": matched_telem.altitude_status,
+                "gimbal_pitch_status": matched_telem.gimbal_pitch_status,
+                "source_timestamp_ms": matched_telem.timestamp_ms,
+                "raw_srt_text": matched_telem.raw_text,
             }
 
         frames_data.append({

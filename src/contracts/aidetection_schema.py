@@ -17,8 +17,8 @@ class AIDetectionPayloadFormatter:
         model_version_id: str,
         defect_type_code: str,
         confidence: float,
-        estimated_width_mm: float,
-        estimated_length_m: float,
+        estimated_width_mm: Optional[float],
+        estimated_length_m: Optional[float],
         target_band: str = "SURFACE",
         is_context_overlap: bool = False,
         projected_station_m: Optional[float] = None,
@@ -26,7 +26,7 @@ class AIDetectionPayloadFormatter:
         aircraft_lon: Optional[float] = None,
         defect_lat: Optional[float] = None,
         defect_lon: Optional[float] = None,
-        location_method: str = "OBSERVED_FOOTPRINT",
+        location_method: str = "UNREFERENCED",
         camera_pose: Optional[Dict[str, Any]] = None,
         raw_box: Optional[List[int]] = None,
         crop_uri: Optional[str] = None
@@ -45,14 +45,14 @@ class AIDetectionPayloadFormatter:
             "target_band": target_band,
             "is_context_overlap": is_context_overlap,
             "confidence": round(float(confidence), 4),
-            "is_2d_estimate": True,
+            "is_2d_estimate": estimated_width_mm is not None and estimated_length_m is not None,
             "estimated_width": estimated_width_mm,
             "estimated_length": estimated_length_m,
             "projected_station_m": round(float(projected_station_m), 2) if projected_station_m is not None else None,
             "defect_location_method": location_method,
             "geometry": defect_geom,
             "aircraft_location": aircraft_geom,
-            "location_uncertainty_m": 1.5 if defect_geom else None,
+            "location_uncertainty_m": None,  # Chưa có mô hình sai số định vị được hiệu chuẩn.
             "camera_pose_json": camera_pose or {},
             "raw_payload": {
                 "detection_id": det_id,
@@ -123,4 +123,3 @@ class AIDetectionPayloadFormatter:
             "type": "FeatureCollection",
             "features": features
         }
-

@@ -1,0 +1,10 @@
+{
+  "mode": "local",
+  "bind_host": "127.0.0.1",
+  "minimum_free_disk_mb": 512,
+  "sample_fps": 2,
+  "max_concurrent_jobs": 1,
+  "max_queued_jobs": 3,
+  "model_directory": "weights/trained",
+  "model_profile": "ft95"
+}

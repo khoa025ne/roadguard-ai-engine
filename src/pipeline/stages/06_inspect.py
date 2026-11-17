@@ -97,4 +97,3 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
     ctx["stage_06_completed"] = True
     print(f"  -> [06_inspect] Hoàn tất thẩm định KTV tầng 2: Giữ lại {len(inspected_items)}/{len(items)} khuyết tật chuẩn xác.")
     return ctx
-

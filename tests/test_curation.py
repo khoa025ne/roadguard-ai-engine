@@ -4,7 +4,7 @@ tests/test_curation.py — Unit test cho Module Curation & Dataset Exporter
 """
 
 import unittest
-import shutil
+import tempfile
 import numpy as np
 import cv2
 from pathlib import Path
@@ -14,8 +14,9 @@ from src.curation import AIAutoTagger, DatasetExporter
 class TestCurationPipeline(unittest.TestCase):
 
     def setUp(self):
-        self.test_dir = Path("F:/train AI đồ án/results/test_curation_tmp")
-        self.test_dir.mkdir(parents=True, exist_ok=True)
+        workspace = tempfile.TemporaryDirectory()
+        self.addCleanup(workspace.cleanup)
+        self.test_dir = Path(workspace.name)
 
         # Tạo ảnh crop giả lập: 1 ổ gà (tối lõi, có viền) và 1 nền phẳng (nhẵn)
         self.pothole_crop = self.test_dir / "crop_pothole_mock.jpg"
@@ -36,9 +37,6 @@ class TestCurationPipeline(unittest.TestCase):
         ret, buf = cv2.imencode(".jpg", img_frame)
         buf.tofile(str(self.mock_frame))
 
-    def tearDown(self):
-        if self.test_dir.exists():
-            shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_auto_tagger_pothole_heuristic(self):
         tagger = AIAutoTagger(provider="builtin_cv_expert")
@@ -61,7 +59,7 @@ class TestCurationPipeline(unittest.TestCase):
 
     def test_kdv_inspector_init_and_fallback(self):
         from src.curation.kdv_inspector import KDVInspector
-        inspector = KDVInspector()
+        inspector = KDVInspector(api_key="fixture-credential", model="gpt-5.4")
         self.assertTrue(inspector.is_available)
         self.assertEqual(inspector.model, "gpt-5.4")
 

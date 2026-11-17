@@ -1,3 +1,4 @@
+/* ck-design-kit · screen: api-client · P5 H5 E5 S5 R5 V4 */
 /**
  * api_client.js — RoadGuard REST API Client (Decoupled Client Architecture)
  * Đóng gói 100% giao tiếp qua HTTP API Contracts, không gọi hàm nội bộ.

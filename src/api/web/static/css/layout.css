@@ -1,162 +1,159 @@
+/* ck-design-kit · screen: layout · P5 H5 E5 S5 R5 V4 */
 /**
  * layout.css — Bố Cục Không Gian 2 Cột Chuẩn Công Nghiệp (Thủy Mệnh)
+ * Tuân thủ Gate 8 (prefers-reduced-motion, cấm transition-all), Gate 9 (overflow-x: clip, thang 4pt),
+ * Gate 4 (heading roman).
  */
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html,
 body {
-  font-family: var(--font-content);
+  width: 100%;
+  overflow-x: clip;
   background-color: var(--bg-app);
   color: var(--text-main);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  font-family: var(--font-content);
+  font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.2px;
+}
+
+h1 em, h2 em, h3 em, h4 em, h1 strong, h2 strong {
+  font-style: normal;
+}
+
+/* KHUNG ỨNG DỤNG TỔNG THỂ */
+.app-container {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: var(--space-6);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
 /* HEADER HỆ THỐNG */
 .app-header {
-  background-color: var(--bg-dark);
-  color: var(--text-inverse);
-  padding: 14px 28px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(213, 222, 232, 0.15);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  align-items: center;
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 
 .brand-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
-.brand-icon {
+.brand-badge {
   width: 32px;
   height: 32px;
-  background-color: var(--primary);
+  background-color: var(--bg-dark);
+  color: var(--accent);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-btn);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #FFFFFF;
-  font-weight: 800;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .brand-title {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: -0.2px;
-  color: #FFFFFF;
-  font-family: var(--font-content);
+  color: var(--text-main);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
 }
 
 .brand-subtitle {
-  font-size: 11px;
-  color: var(--metallic);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
   font-family: var(--font-mono);
-  letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
 .header-status-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
-/* KHÔNG GIAN LÀM VIỆC CHÍNH */
-.main-wrapper {
-  max-width: 1720px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px 24px;
-  flex: 1;
-}
-
-.workspace-grid {
+/* LƯỚI KHÔNG GIAN LÀM VIỆC CHÍNH */
+.main-grid {
   display: grid;
   grid-template-columns: 390px 1fr;
-  gap: 20px;
+  gap: var(--space-6);
   align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* CỘT ĐIỀU KHIỂN & CẤU HÌNH (LEFT) */
 .control-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-5);
 }
 
 /* CỘT KHÔNG GIAN KẾT QUẢ & THẨM ĐỊNH (RIGHT) */
-.results-workspace {
+.content-area {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-width: 0; /* Ngăn tràn flex container */
+  gap: var(--space-5);
+  min-width: 0;
 }
 
-/* THẺ NỘI DUNG (CARD) THỦY MỆNH */
-.rg-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-card);
-  padding: 18px 20px;
-  box-shadow: var(--shadow-none);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.rg-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--bg-subtle);
-  padding-bottom: 12px;
-}
-
-.rg-card-title {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--text-main);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.rg-card-subtitle {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* FOOTER THỦY MỆNH */
+/* FOOTER / TÍCH HỢP */
 .app-footer {
   margin-top: auto;
-  padding: 16px 24px;
-  background-color: var(--bg-surface);
+  padding-top: var(--space-4);
   border-top: 1px solid var(--border-color);
-  font-size: 12px;
-  color: var(--text-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: var(--font-ui);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
 }
 
-/* RESPONSIVE LAYOUT */
-@media (max-width: 1180px) {
-  .workspace-grid {
-    grid-template-columns: 1fr;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

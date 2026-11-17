@@ -94,8 +94,16 @@ class VideoFrameExtractor:
                                 "latitude": matched.latitude,
                                 "longitude": matched.longitude,
                                 "rel_alt_m": matched.rel_alt_m,
+                                "abs_alt_m": matched.abs_alt_m,
+                                "reported_h_m": matched.reported_h_m,
+                                "reported_d_m": matched.reported_d_m,
+                                "gps_third_value": matched.gps_third_value,
                                 "gimbal_pitch": matched.gimbal_pitch,
                                 "gsd_mm_per_px": matched.gsd_mm_per_px,
+                                "gps_status": matched.gps_status,
+                                "altitude_status": matched.altitude_status,
+                                "gimbal_pitch_status": matched.gimbal_pitch_status,
+                                "raw_srt_text": matched.raw_text,
                                 "timestamp_ms": matched.timestamp_ms
                             }
 

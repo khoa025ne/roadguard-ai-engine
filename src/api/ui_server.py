@@ -31,14 +31,13 @@ from src.inference.predictor import RoadDefectPredictor
 from src.curation import AIAutoTagger, DatasetExporter
 from src.ingestion.dataset_scanner import DatasetScanner
 from src.pipeline.pipeline import run_video_analysis_task
+from src.api.mvp_video import router as mvp_video_router
 
 WEB_DIR = WORKSPACE_ROOT / "src/api/web"
 RESULTS_DIR = WORKSPACE_ROOT / "results/web_runs"
 UPLOADS_DIR = WORKSPACE_ROOT / "results/web_uploads"
 WEIGHTS_DIR = WORKSPACE_ROOT / "weights"
-PRESET_VIDEO = WORKSPACE_ROOT / "data/raw_videos/DJI_0057.MP4"
-if not PRESET_VIDEO.exists():
-    PRESET_VIDEO = Path("F:/Fake_admin/Downloads/đồ án test vid/DJI_0057.MP4")
+PRESET_VIDEO = WORKSPACE_ROOT / "data/raw_videos/sample.mp4"
 SYNTHETIC_VIDEO = WORKSPACE_ROOT / "results/test_videos/dataset_road_survey_test.mp4"
 
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -71,6 +70,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(mvp_video_router)
 
 # Mount thư mục lưu kết quả ảnh và tài nguyên tĩnh giao diện
 app.mount("/static_results", StaticFiles(directory=str(RESULTS_DIR)), name="static_results")
@@ -90,6 +90,11 @@ class AnalysisRequest(BaseModel):
 
 
 @app.get("/", response_class=HTMLResponse)
+async def serve_mvp_video():
+    return (WEB_DIR / "mvp_video.html").read_text(encoding="utf-8")
+
+
+@app.get("/test-bench", response_class=HTMLResponse)
 async def serve_index():
     index_file = WEB_DIR / "index.html"
     if not index_file.exists():
@@ -995,5 +1000,3 @@ if __name__ == "__main__":
 
     print(f"🚀 Khởi động RoadGuard Web UI tại: http://{args.host}:{args.port}")
     uvicorn.run("src.api.ui_server:app", host=args.host, port=args.port, reload=args.reload)
-
-

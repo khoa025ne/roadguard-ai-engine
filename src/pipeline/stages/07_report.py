@@ -99,8 +99,14 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
             "box": det.get("box", [0, 0, 0, 0]),
             "crop_url": crop_url,
             "severity": det.get("severity", "MEDIUM"),
-            "ground_latitude": det.get("ground_latitude", 0.0),
-            "ground_longitude": det.get("ground_longitude", 0.0)
+            "ground_latitude": det.get("ground_latitude"),
+            "ground_longitude": det.get("ground_longitude"),
+            "measurement_status": det.get("measurement_status", "not_measurable"),
+            "telemetry_status": det.get("telemetry_status", "missing"),
+            "gsd_used": det.get("gsd_used"),
+            "reported_h_m": det.get("reported_h_m"),
+            "reported_d_m": det.get("reported_d_m"),
+            "telemetry_provenance": det.get("telemetry_provenance"),
         }
         all_defects.append(defect_record)
 
@@ -110,10 +116,12 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
             model_version_id=model_name,
             defect_type_code=cls_name,
             confidence=det.get("confidence", 0.0),
-            estimated_width_mm=det.get("estimated_width_mm", 0.0),
-            estimated_length_m=det.get("estimated_length_m", 0.0),
+            estimated_width_mm=det.get("estimated_width_mm"),
+            estimated_length_m=det.get("estimated_length_m"),
             raw_box=raw_box,
-            location_method=det.get("location_method", "OBSERVED_FOOTPRINT"),
+            location_method=det.get("location_method", "UNREFERENCED"),
+            aircraft_lat=det.get("aircraft_latitude"),
+            aircraft_lon=det.get("aircraft_longitude"),
             defect_lat=det.get("ground_latitude") or None,
             defect_lon=det.get("ground_longitude") or None,
             target_band=det.get("target_band", "SURFACE"),
@@ -124,6 +132,13 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
         rec["structural_risk"] = det.get("structural_risk", "")
         rec["recommendation"] = det.get("recommendation", "")
         rec["crop_url"] = crop_url
+        rec["measurement_status"] = det.get("measurement_status", "not_measurable")
+        rec["telemetry_status"] = det.get("telemetry_status", "missing")
+        rec["gsd_mm_per_px"] = det.get("gsd_used")
+        rec["gsd_source"] = det.get("gsd_source")
+        rec["reported_h_m"] = det.get("reported_h_m")
+        rec["reported_d_m"] = det.get("reported_d_m")
+        rec["telemetry_provenance"] = det.get("telemetry_provenance")
         formatted_detections.append(rec)
 
     # 2. Vẽ Annotated Frames

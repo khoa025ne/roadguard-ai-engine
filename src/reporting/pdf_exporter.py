@@ -83,9 +83,11 @@ def generate_html_report(report_data: Dict[str, Any], output_html_path: Optional
         c_code = det.get("defect_type_code") or det.get("class_name", "defect")
         fine_tag = det.get("fine_tag") or det.get("fine_tag_code", c_code)
         sev = str(det.get("severity", "MEDIUM")).upper()
-        width = det.get("estimated_width") or det.get("estimated_width_mm", 0.0)
-        length = det.get("estimated_length") or det.get("estimated_length_m", 0.0)
-        
+        width = det.get("estimated_width", det.get("estimated_width_mm"))
+        length = det.get("estimated_length", det.get("estimated_length_m"))
+        size_text = (f"{width:.1f} mm<br><span style='color: #7A8FA3; font-size: 11px;'>Dài: {length:.2f} m</span>"
+                     if width is not None and length is not None else "Chưa đủ dữ liệu đo")
+
         # Tọa độ GPS WGS84
         glat = det.get("ground_latitude")
         glon = det.get("ground_longitude")
@@ -109,7 +111,7 @@ def generate_html_report(report_data: Dict[str, Any], output_html_path: Optional
             <td style="text-align: center; font-weight: bold;">#{idx}</td>
             <td><strong>{c_code.capitalize()}</strong><br><span style="color: #7A8FA3; font-size: 11px;">{fine_tag}</span></td>
             <td><span class="badge {sev_badge_class}">{sev}</span></td>
-            <td>{width:.1f} mm<br><span style="color: #7A8FA3; font-size: 11px;">Dài: {length:.2f} m</span></td>
+            <td>{size_text}</td>
             <td><span style="font-family: monospace; font-size: 11px;">{gps_str}</span></td>
             <td style="font-size: 12px; color: #3D4F61;">{reason}</td>
         </tr>
@@ -479,8 +481,10 @@ def _export_pdf_via_reportlab(report_data: Dict[str, Any], output_pdf_path: Unio
         c_code = det.get("defect_type_code") or det.get("class_name", "defect")
         fine_tag = det.get("fine_tag") or det.get("fine_tag_code", c_code)
         sev = str(det.get("severity", "MEDIUM")).upper()
-        width = det.get("estimated_width") or det.get("estimated_width_mm", 0.0)
-        length = det.get("estimated_length") or det.get("estimated_length_m", 0.0)
+        width = det.get("estimated_width", det.get("estimated_width_mm"))
+        length = det.get("estimated_length", det.get("estimated_length_m"))
+        size_text = (f"Rộng: {width:.1f}mm<br/><font color='#7A8FA3' size='7'>Dài: {length:.2f}m</font>"
+                     if width is not None and length is not None else "Chưa đủ dữ liệu đo")
 
         glat = det.get("ground_latitude")
         glon = det.get("ground_longitude")
@@ -501,7 +505,7 @@ def _export_pdf_via_reportlab(report_data: Dict[str, Any], output_pdf_path: Unio
             Paragraph(f"<b>#{idx}</b>", style_td_bold),
             Paragraph(f"<b>{c_code.capitalize()}</b><br/><font color='#7A8FA3' size='7'>{fine_tag}</font>", style_td),
             Paragraph(f"<b><font color='{sev_color.hexval()}'>{sev}</font></b>", style_td_bold),
-            Paragraph(f"Rộng: {width:.1f}mm<br/><font color='#7A8FA3' size='7'>Dài: {length:.2f}m</font>", style_td),
+            Paragraph(size_text, style_td),
             Paragraph(f"<font size='7'>{gps_txt}</font>", style_td),
             Paragraph(reason[:140] + ("..." if len(reason) > 140 else ""), style_td)
         ])

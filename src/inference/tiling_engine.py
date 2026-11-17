@@ -187,4 +187,3 @@ class ContextOverlapHandler:
         tức nằm trong dải đệm biên (Context Overlap).
         """
         return (projected_station_m < start_station_m) or (projected_station_m > end_station_m)
-

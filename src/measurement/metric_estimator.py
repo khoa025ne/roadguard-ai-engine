@@ -126,4 +126,3 @@ class MetricEstimator:
             return "MEDIUM"
         else:
             return "LOW"
-

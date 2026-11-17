@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RoadGuard · kiểm tra sơ bộ road mask DJI</title>
+  <style>
+    body{margin:0;background:#f4f7fa;color:#173043;font:15px system-ui,sans-serif}
+    header{background:#12344c;color:white;padding:12px 18px}h1{font-size:20px;margin:0 0 4px}
+    header a{color:#c6e7ff}main{display:grid;grid-template-columns:270px minmax(0,1fr) 310px;gap:10px;padding:10px;height:calc(100vh - 90px);box-sizing:border-box}
+    section{background:white;border:1px solid #d3dce5;border-radius:7px;padding:10px;overflow:auto}
+    h2{font-size:16px;margin:4px 0 9px}.item{display:block;width:100%;text-align:left;background:white;border:1px solid #ced7e0;border-radius:4px;margin:5px 0;padding:6px;cursor:pointer}.item.active{background:#d9eefb;border-color:#2679a9}
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}.canvas-wrap{overflow:auto;max-height:calc(100vh - 240px);background:#222;border:1px solid #ced7e0}canvas{display:block;cursor:crosshair}
+    label.field{display:block;margin:10px 0}label.field span{display:block;font-weight:600;margin-bottom:3px}input:not([type=range]):not([type=checkbox]),select,textarea{width:100%;box-sizing:border-box;padding:7px;font:inherit;border:1px solid #aebecb;border-radius:4px}textarea{height:80px}
+    button{cursor:pointer;padding:7px 10px}.small{font-size:12px;color:#536371;line-height:1.4}.warn{color:#a32c20;font-weight:650}.good{color:#17703b;font-weight:650}
+    #notice{white-space:pre-wrap;background:#edf4f8;padding:7px;min-height:20px}#issues{max-height:150px;overflow:auto}.issue{display:flex;justify-content:space-between;gap:5px;padding:4px;border-bottom:1px solid #e1e7ec}
+    @media(max-width:1050px){main{grid-template-columns:200px 1fr;height:auto}section:last-child{grid-column:1/-1}}
+  </style>
+</head>
+<body>
+<header><h1>RoadGuard · pilot kiểm tra road mask (20 ảnh)</h1><div class="small" style="color:#d9e7f2">Mask xanh là <strong>dự đoán chưa duyệt</strong>. Vùng cam là lỗi/chưa chắc do bạn đánh dấu; thao tác này không phê duyệt kỹ sư. · <a href="/">Quay lại gán box</a></div></header>
+<main>
+  <section><h2>Ảnh pilot</h2><div id="items">Đang tải…</div></section>
+  <section>
+    <strong id="current">Chọn ảnh bên trái</strong>
+    <div class="toolbar"><label><input id="show-mask" type="checkbox" checked> Hiện mask dự đoán</label><label><input id="show-detections" type="checkbox"> Hiện detector gốc</label><label>Độ phủ mask <input id="opacity" type="range" min="10" max="80" value="42"> <span id="opacity-value">42%</span></label><label>Zoom <input id="zoom" type="range" min="35" max="130" value="55"> <span id="zoom-value">55%</span></label></div>
+    <div class="toolbar"><label>Đánh dấu vùng sai <select id="issue-kind"><option value="false_road">Mask lấn ra ngoài đường</option><option value="missing_road">Mask thiếu đường</option><option value="uncertain_boundary">Ranh giới chưa chắc</option><option value="occluder">Vật che mặt đường</option></select></label><button id="remove-last" type="button">Bỏ vùng vừa đánh dấu</button></div>
+    <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+    <p class="small">Kéo hình chữ nhật để đánh dấu vùng mask sai/chưa chắc. Đây là <strong>đánh dấu lỗi</strong>, chưa chỉnh pixel mask. Vùng bóng còn thấy bê tông thuộc đường; vật che kín/ngoài đường không tự coi là đường. Bỏ chọn “Hiện mask” để so ảnh gốc.</p>
+    <div id="issues"></div>
+  </section>
+  <section>
+    <h2>Kiểm tra sơ bộ</h2><div id="provenance" class="small"></div>
+    <p id="mask-status" class="warn">Chưa chọn ảnh</p>
+    <p id="save-state">Chọn ảnh để bắt đầu</p>
+    <label class="field"><span>Kết quả xem mask</span><select id="check"><option value="uncertain">Chưa chắc / cần kiểm tra thêm</option><option value="looks_correct">Nhìn đúng ở mức sơ bộ</option><option value="needs_correction">Có vùng sai / cần sửa</option></select></label>
+    <label class="field"><span>Người kiểm tra sơ bộ</span><input id="checked-by" placeholder="Tên người xem ảnh"></label>
+    <label class="field"><span>Thời gian kiểm tra (phút, nếu đã đo)</span><input id="minutes" type="number" min="0" max="1440" step="0.1" placeholder="Để trống nếu chưa đo"></label>
+    <label class="field"><span>Ghi chú</span><textarea id="notes" placeholder="Ví dụ: thiếu mép đường bên trái; bóng cây vẫn là mặt bê tông"></textarea></label>
+    <button id="save" type="button">Lưu kiểm tra sơ bộ</button>
+    <p id="notice" role="status">Chưa có xác nhận của bạn. Không có mask nào được tự gán đã duyệt.</p>
+    <p class="small">Dữ liệu lưu thành revision mới ở máy này. Trạng thái kỹ sư luôn là <code>not_requested</code>; mask dự đoán không tự thành ground truth.</p>
+    <p id="summary" class="small"></p>
+  </section>
+</main>
+<script src="/roadmask.js"></script>
+</body></html>
