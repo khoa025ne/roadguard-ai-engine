@@ -54,3 +54,5 @@ Cài Node.js, rồi chạy `npm install --no-save --no-package-lock playwright`.
 Kiểm tra dịch vụ từ máy chủ bằng `GET /api/mvp-video/config`, sau đó kiểm tra trạng thái model trong `GET /api/mvp-video/models`. Chạy một process tại loopback, lưu bền thư mục kết quả và giới hạn dung lượng, thời gian vận hành theo dữ liệu thực. Khi triển khai qua backend, cần xác thực, phân quyền job và cô lập dữ liệu ở lớp dịch vụ trước khi mở truy cập mạng.
 
 FT95 chưa có benchmark độc lập xác nhận hiệu năng riêng trên bê tông xi măng. Số box là số lần quan sát. Road Mask chưa duyệt, Vision và kết quả AI âm tính không phải Ground Truth. Vision CKEY đã qua kiểm tra schema với 1 ảnh PNG và một batch 5 ảnh DJI thu nhỏ 768×432. Batch 10 ảnh timeout sau 50 giây. Cấu hình mặc định gửi một ảnh mỗi request. Chưa xác nhận đơn giá hoặc hiệu năng Report AI.
+
+Lịch sử Git được giữ nguyên và có thể còn tham chiếu đường dẫn nội bộ từ các phiên bản cũ. Cây phát hành hiện tại đã được quét để loại các đường dẫn và thông tin xác thực khỏi các tệp phân phối.
