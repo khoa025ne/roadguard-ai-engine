@@ -83,7 +83,7 @@ class MVPVideo28Tests(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as directory, patch.object(api, 'RUNS', Path(directory)), patch.object(api, 'REPORT_ENABLED', True), patch.dict('os.environ', {'KDV_MODEL':'qwen-test','KDV_BASE_URL':'http://localhost:9999/v1'}), patch('src.curation.kdv_inspector.KDVInspector', return_value=SimpleNamespace(is_available=True,_client=client,model='qwen-test')):
                 (Path(directory)/job_id).mkdir()
-                response = self.client.post('/api/mvp-video/'+job_id+'/report')
+                response = self.client.post('/api/mvp-video/'+job_id+'/report', json={'confirm_paid': True})
                 self.assertEqual(response.status_code,200)
                 self.assertEqual((Path(directory)/job_id/'report_vi.txt').read_text(encoding='utf-8'), response.json()['text'])
                 payload = str(client.chat.completions.create.call_args)

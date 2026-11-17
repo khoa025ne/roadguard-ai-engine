@@ -96,15 +96,23 @@ def install_review_routes(router, get_job, runs_root, guard):
 
     @router.get('/{job_id}/review-queue/api/state')
     def state(job_id: str):
-        return service(job_id).state()
+        from src.api.ckey_routes import vision_state
+        current = service(job_id)
+        state = current.state()
+        vision = vision_state(jobs.directory(runs_root(), job_id), active=True)
+        state['vision'] = vision.get('result')
+        return state
 
     @router.get('/{job_id}/review-queue/api/frame/{index}')
-    def frame(job_id: str, index: int):
+    def frame(job_id: str, index: int, mask: bool = False):
         current = service(job_id)
         row = next((f for f in current.source['frames'] if f['frame'] == index), None)
         if row is None:
             raise HTTPException(404, 'Unknown source frame')
-        path = (current.result_path.parent/row['image']).resolve()
+        name = row.get('road_overlay') if mask else row['image']
+        if not name:
+            raise HTTPException(404, 'Road Mask overlay unavailable')
+        path = (current.result_path.parent/name).resolve()
         if not path.is_relative_to(current.result_path.parent) or not path.is_file():
             raise HTTPException(404, 'Unknown source frame')
         return FileResponse(path)

@@ -1,6 +1,5 @@
 """Existing RoadGuard video MVP: loopback-only, durable local jobs and model selection."""
 import hashlib
-import html
 import json
 import math
 import os
@@ -169,6 +168,8 @@ def execute(job_id, source, limits):
                       {"processed_frames": done, "total_frames": total})
             segment = job.get('segment', {})
             segment_args = {'segment_model': segment['model']['id'], 'expected_segment': segment['model']} if segment.get('enabled') else {}
+            if job.get('detection_mode') == 'Vision':
+                segment_args['detect_local'] = False
             result = analyze_video(source, RUNS / job_id, duration=limits.get("seconds"),
                                    sample_fps=job.get("sample_fps", limits.get("fps", 2)),
                                    max_frames=limits.get("max_frames"), selection=job.get("selection"),
@@ -177,7 +178,8 @@ def execute(job_id, source, limits):
                                    event=lambda *args: event(job, *args), **segment_args)
             if job.get("cancel_requested"):
                 raise InterruptedError()
-            job.update(status="COMPLETED", result=result, progress=100, message="Kết quả đã lưu local")
+            job.update(status="COMPLETED", result=result, progress=100,
+                       completed_at=store.now(), message="Kết quả đã lưu local")
             event(job, "review", "INFO", "JOB_COMPLETED", "Đã lưu kết quả; cần con người rà soát candidate.")
             local_report(job)
         except InterruptedError:
@@ -245,7 +247,7 @@ def segment_identity(selection):
 async def upload(bg: BackgroundTasks, file: UploadFile = File(...), crack_model: str = Form(""),
                  pothole_model: str = Form(""), sample_fps: str = Form(""),
                  road_mask_enabled: bool = Form(False), segment_model: str = Form(''),
-                 prepare_only: bool = Form(False),
+                 prepare_only: bool = Form(False), detection_mode: str = Form(""),
                  idempotency_key: str = Header(default="", alias="Idempotency-Key")):
     try:
         cfg = settings()
@@ -259,8 +261,22 @@ async def upload(bg: BackgroundTasks, file: UploadFile = File(...), crack_model:
     catalog = discover_models()
     selection = {"CRACK": crack_model or catalog["defaults"]["CRACK"],
                  "POTHOLE": pothole_model or catalog["defaults"]["POTHOLE"]}
+    if detection_mode not in {"", "FT95", "Vision", "FT95 + Vision"}:
+        fail(422, "INVALID_DETECTION_MODE", "Chế độ nhận diện không hợp lệ.")
     try:
-        resolved = resolve_models(selection)
+        if detection_mode == "Vision":
+            selection = {}
+            resolved = []
+        elif detection_mode:
+            ft95 = next((row for row in catalog["models"] if row["task"] == "ROAD_DAMAGE"
+                         and row["name"] == "RoadGuard_YOLO11_UAVPDD2023_FT95_v1.pt"
+                         and row["status"] == "available"), None)
+            if not ft95:
+                raise ValueError("FT95 unavailable")
+            selection = dict.fromkeys(("CRACK", "POTHOLE"), ft95["id"])
+            resolved = resolve_models(selection)
+        else:
+            resolved = resolve_models(selection)
         segment = {'enabled': bool(road_mask_enabled), 'model': None}
         if road_mask_enabled:
             row, _ = resolve_segment_model(segment_model or catalog.get('segment_default'))
@@ -280,7 +296,7 @@ async def upload(bg: BackgroundTasks, file: UploadFile = File(...), crack_model:
             folder.mkdir(parents=True, exist_ok=False)
             job = {"job_id": job_id, "created_at": store.now(), "status": "UPLOADING", "progress": None,
                    "selection": selection, "models": [r for _, r, _ in resolved], "sample_fps": fps,
-                   'segment': segment,
+                   'segment': segment, 'detection_mode': detection_mode,
                    "source_name": Path(file.filename or "video").name, "idempotency_key": idempotency_key,
                    "mode": "local", "sequence": 0, "cancel_requested": False}
             JOBS[job_id] = job
@@ -305,7 +321,8 @@ async def upload(bg: BackgroundTasks, file: UploadFile = File(...), crack_model:
                 handle.close()
         if old:
             if (digest.hexdigest() != old.get("source_sha256") or selection != old["selection"] or fps != old["sample_fps"]
-                or segment_identity(segment) != segment_identity(old.get('segment'))):
+                or segment_identity(segment) != segment_identity(old.get('segment'))
+                or detection_mode != old.get('detection_mode', '')):
                 fail(409, "IDEMPOTENCY_CONFLICT", "Khóa yêu cầu đã dùng với video hoặc model/FPS khác.", "upload")
             return {"job_id": job_id, "replayed": True}
         if not size:
@@ -413,27 +430,16 @@ def artifact(job_id: str, name: str):
         path = store.directory(RUNS, job_id) / name
     except ValueError:
         fail(404, "FILE_NOT_FOUND", "Không tìm thấy tệp.")
+    if name in {"report_local.html", "report_local.json"} and job.get("status") == "COMPLETED":
+        local_report(job)
     if name not in allowed or path.name != name or not path.is_file() or path.is_symlink():
         fail(404, "FILE_NOT_FOUND", "Không tìm thấy tệp.")
     return FileResponse(path)
 
 
 def local_report(job):
-    result = job["result"]
-    payload = {"job_id": job["job_id"], "provider": "local-statistics", "models": result["models"],
-               "summary": result["summary"], "limitations": result["limitations"],
-               "human_review": "Chưa được con người xác nhận", "generated_at": store.now()}
-    folder = RUNS / job["job_id"]
-    (folder / "report_local.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    rows = "".join(f"<tr><td>{html.escape(k)}</td><td>{html.escape(str(v))}</td></tr>" for k, v in result["summary"].items())
-    evidence = "".join(f'<figure><img style="max-width:100%" src="{html.escape(f["image"])}"><figcaption>Frame {f["frame"]} · {f["timestamp_s"]} giây</figcaption></figure>' for f in result.get("frames", [])[:12])
-    text = ('<!doctype html><html lang="vi"><meta charset="utf-8"><title>Báo cáo RoadGuard</title>'
-            '<body><h1>Báo cáo thống kê local</h1><p>Chưa được con người xác nhận</p><table>' + rows + '</table><p>'
-            + html.escape(result["limitations"]) + '</p><p>Đề nghị kiểm tra thực địa; không có số đo hoặc kết luận kiểm định.</p>'
-            + '<p>Model: ' + html.escape(", ".join(m["label"] + " / " + m.get("version", "") for m in result["models"]))
-            + '</p>' + evidence + '</body></html>')
-    (folder / "report_local.html").write_text(text, encoding="utf-8")
-    return payload
+    from src.api.local_video_report import write
+    return write(job, store.directory(RUNS, job["job_id"]))
 
 
 @router.post("/{job_id}/report/local")
@@ -445,12 +451,14 @@ def statistics(job_id: str):
 
 
 @router.post("/{job_id}/report")
-def report(job_id: str):
+def report(job_id: str, body: dict | None = Body(None)):
     job = get_job(job_id)
     if not REPORT_ENABLED:
         fail(503, "REPORT_PROVIDER_UNAVAILABLE", "Chưa bật provider báo cáo. Báo cáo thống kê local vẫn sử dụng được.", "report")
     if job["status"] != "COMPLETED":
         fail(409, "JOB_NOT_COMPLETE", "Video chưa phân tích thành công.", "report")
+    if (body or {}).get("confirm_paid") is not True:
+        fail(409, "REPORT_CONSENT_REQUIRED", "Cần xác nhận trước khi gửi dữ liệu báo cáo.", "report")
     from src.curation.kdv_inspector import KDVInspector
     inspector = KDVInspector(timeout=60, max_retries=0)
     if not inspector.is_available or not os.environ.get("KDV_MODEL") or not os.environ.get("KDV_BASE_URL"):

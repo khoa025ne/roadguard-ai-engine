@@ -123,7 +123,7 @@ def probe_video(video, *, duration, sample_fps, max_frames):
 
 def analyze_video(video, output, *, duration, sample_fps, confidence=0.25, progress=None,
                   selection=None, event=None, max_frames=None, cancelled=None, expected_models=None,
-                  segment_model=None, expected_segment=None):
+                  segment_model=None, expected_segment=None, detect_local=True):
     """Bounded sampled-frame inference; counts are observations, not unique defects."""
     if (duration is not None and duration <= 0) or (sample_fps is not None and not 0 < sample_fps <= 30) or not 0 < confidence <= 1:
         raise ValueError("Giới hạn inference không hợp lệ")
@@ -131,7 +131,7 @@ def analyze_video(video, output, *, duration, sample_fps, confidence=0.25, progr
     output.mkdir(parents=True, exist_ok=True)
     emit = event or (lambda *args, **kwargs: None)
     emit("model_loading", "INFO", "MODEL_LOADING", "Đang tải các model đã chọn.")
-    loaded, metadata = load_models(selection, expected_models)
+    loaded, metadata = load_models(selection, expected_models) if detect_local else ([], [])
     segmenter, segment_meta = load_segmenter(segment_model, expected_segment) if segment_model else (None, None)
     emit("decode", "INFO", "VIDEO_DECODING", "Đang đọc metadata và giải mã video.")
     cap = cv2.VideoCapture(str(video))
