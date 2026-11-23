@@ -21,9 +21,15 @@ class MVPVideo28Tests(unittest.TestCase):
 
     def test_wrong_mapping_fails_closed(self):
         from types import SimpleNamespace
-        with patch.object(inference, "YOLO", return_value=SimpleNamespace(task="detect", names={0:"crack"})):
-            with self.assertRaisesRegex(ValueError, "Pothole"):
-                inference.load_models()
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "pothole-fixture.pt"
+            checkpoint.write_bytes(b"fixture")
+            entries = [("POTHOLE", "Pothole fixture", checkpoint, {"pothole"})]
+            with patch.object(inference, "MODELS", entries), patch.object(
+                inference, "YOLO", return_value=SimpleNamespace(task="detect", names={0: "crack"})
+            ):
+                with self.assertRaisesRegex(ValueError, "Pothole fixture"):
+                    inference.load_models()
 
     def test_missing_checkpoint_no_fallback(self):
         with patch.object(inference, "MODELS", [("CRACK", "missing", Path("missing.pt"), {"crack"})]):

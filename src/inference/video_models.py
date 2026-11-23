@@ -44,7 +44,11 @@ def inspect_checkpoint(path):
 
 
 def discover_models(refresh=False):
-    directory = model_directory()
+    # Normalize both sides before comparing containment.  On Windows a
+    # temporary path may be returned in 8.3 form while Path.resolve() expands
+    # it; comparing the raw directory against a resolved child incorrectly
+    # drops every checkpoint from the catalog.
+    directory = model_directory().resolve()
     rows = []
     with _lock:
         if refresh:
@@ -124,8 +128,8 @@ def resolve_models(selection):
         row = next((r for r in catalog["models"] if r["id"] == model_id), None)
         if not row or row["task"] != task or row["status"] != "available":
             raise ValueError("MODEL_UNAVAILABLE")
-        path = model_directory() / row["name"]
-        if path.resolve().parent != model_directory():
+        path = model_directory().resolve() / row["name"]
+        if path.resolve().parent != model_directory().resolve():
             raise ValueError("MODEL_UNAVAILABLE")
         resolved.append((task, row, path))
     return resolved

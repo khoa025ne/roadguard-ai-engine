@@ -31,6 +31,26 @@ LIMITS = "configured"  # None still fails closed for callers/tests using the old
 REPORT_ENABLED = os.environ.get("RG_VIDEO_REPORT_ENABLED") == "1"
 
 
+def release_service_leases():
+    """Release loopback result-directory leases when the ASGI app stops.
+
+    The lease protects a live local service from a second process.  It must
+    survive between requests, but an orderly shutdown must release the OS
+    handle so a subsequent local session can recover the same directory and
+    so disposable test roots can be removed on Windows.
+    """
+    with ADMISSION:
+        leases = list(SERVICE_LEASES.values())
+        SERVICE_LEASES.clear()
+    for lease in leases:
+        try:
+            lease.release()
+        except (OSError, RuntimeError):
+            # Shutdown is best effort; never turn app disposal into a second
+            # failure after the owned service has already stopped serving.
+            pass
+
+
 def settings():
     value = json.loads((ROOT / "configs/mvp_video.json").read_text(encoding="utf-8"))
     for key in ("sample_fps", "max_concurrent_jobs", "max_queued_jobs", "minimum_free_disk_mb"):
@@ -72,6 +92,11 @@ def local_only(request: Request):
 
 
 router = APIRouter(prefix="/api/mvp-video", dependencies=[Depends(local_only)])
+
+
+@router.on_event("shutdown")
+def _release_service_leases_on_shutdown():
+    release_service_leases()
 
 
 def recover():
