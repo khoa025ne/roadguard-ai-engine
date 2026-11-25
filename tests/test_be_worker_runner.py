@@ -230,6 +230,30 @@ class MediaProcessBoundsTests(unittest.TestCase):
 
     @unittest.skipUnless(os.environ.get('ROADGUARD_TEST_FFMPEG') and os.environ.get('ROADGUARD_TEST_FFPROBE'),
                          'Explicit local FFmpeg/FFprobe required for synthetic media regression')
+    def test_real_frame_selection_uses_full_budget_with_irregular_ordinals(self):
+        media = runner.FFmpegMedia(os.environ['ROADGUARD_TEST_FFMPEG'], os.environ['ROADGUARD_TEST_FFPROBE'])
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            video = root / 'frame-budget.mp4'
+            runner._bounded_command([media.ffmpeg, '-v', 'error', '-f', 'lavfi', '-i',
+                'testsrc2=s=48x32:r=30:d=12', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+                '-n', str(video)], lambda: None)
+            timeline = media.probe(video, lambda: None)[3]
+            selected = [timeline[2 * i + i % 2] for i in range(180)]
+            reference_dir = root / 'reference'
+            selected_dir = root / 'selected'
+            reference_dir.mkdir()
+            selected_dir.mkdir()
+            runner._bounded_command([media.ffmpeg, '-v', 'error', '-noautorotate', '-copyts',
+                '-threads', '1', '-i', str(video), '-map', '0:v:0', '-fps_mode', 'passthrough',
+                '-threads', '1', '-q:v', '2', '-n', str(reference_dir / 'frame-%06d.jpg')], lambda: None)
+            frames = list(media.frames(video, selected_dir, selected, lambda: None))
+            self.assertEqual([timestamp for timestamp, _ in frames], [timestamp for _, timestamp in selected])
+            for (ordinal, _), (_, frame) in zip(selected, frames):
+                self.assertEqual(frame.read_bytes(), (reference_dir / f'frame-{ordinal+1:06d}.jpg').read_bytes())
+
+    @unittest.skipUnless(os.environ.get('ROADGUARD_TEST_FFMPEG') and os.environ.get('ROADGUARD_TEST_FFPROBE'),
+                         'Explicit local FFmpeg/FFprobe required for synthetic media regression')
     def test_real_nonzero_video_and_embedded_cues_share_relative_clock(self):
         from src.ingestion.embedded_srt import extract_srt
         from src.ingestion.srt_parser import DJISRTParser
@@ -244,7 +268,9 @@ class MediaProcessBoundsTests(unittest.TestCase):
                 '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:s', 'mov_text', '-output_ts_offset', '10',
                 '-n', str(video)], lambda: None)
             width, height, duration, pts = media.probe(video, lambda: None)
-            self.assertEqual((width, height, duration, pts), (100, 80, 1000, [(0, 0.), (1, .5)]))
+            self.assertEqual((width, height, pts), (100, 80, [(0, 0.), (1, .5)]))
+            # FFprobe versions differ on whether this fixture's duration includes its output offset.
+            self.assertIn(duration, (1000, 11000))
             self.assertEqual(float(pts.origin_seconds), 10.)
             frames_dir = root / 'frames'; frames_dir.mkdir()
             self.assertEqual([t for t, _ in media.frames(video, frames_dir, pts, lambda: None)], [0., .5])

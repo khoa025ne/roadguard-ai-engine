@@ -127,9 +127,18 @@ class FFmpegMedia:
         return width, height, duration, pts
 
     def frames(self, video, directory, selected, check):
+        if not selected:
+            raise RunnerError('NO_VIDEO_FRAMES')
         # Use source frame ordinals from the same decoder's PTS probe. select
         # changes no timestamp; passthrough prohibits duplicate/drop synthesis.
-        expression = '+'.join(f'eq(n\\,{index})' for index, _ in selected)
+        # Balance the sum to stay within older FFmpeg expression depth limits.
+        def frame_expression(start, end):
+            if end - start == 1:
+                return f'eq(n\\,{selected[start][0]})'
+            middle = (start + end) // 2
+            return f'({frame_expression(start, middle)}+{frame_expression(middle, end)})'
+
+        expression = frame_expression(0, len(selected))
         if os.name == 'nt' and len(expression) > 24000:
             raise RunnerError('MEDIA_RESOURCE_LIMIT')
         pattern = directory / 'frame-%06d.jpg'
